@@ -2,9 +2,189 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
+import { defaultProject } from '../../src/domain/project';
 
-test('dark theme follows system, persists independently, and Report targets project issues', async ({ page }, testInfo) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
+test('thread chamfer follows pitch, preserves custom values, roundtrips exports and migrates old designs', async ({ page }, testInfo) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('./'); await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  await page.getByRole('button', { name: 'M 型内螺纹', exact: true }).click();
+  await expect(page.getByTestId('thread-chamfer')).toBeChecked();
+  await expect(page.getByTestId('chamfer-size')).toHaveText('1.20 mm / 45°');
+  await page.getByLabel('螺距 P', { exact: true }).fill('0.75');
+  await expect(page.getByTestId('chamfer-size')).toHaveText('0.90 mm / 45°');
+  await page.getByLabel('我已确认实际配合件的外径与螺距').check();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.getByRole('combobox', { name: '倒角尺寸模式' }).selectOption('custom');
+  await page.getByLabel('倒角尺寸 C（深度 / 径向增量）', { exact: true }).fill('0.5');
+  await expect(page.getByTestId('chamfer-size')).toHaveText('0.50 mm / 45°');
+  await page.getByRole('combobox', { name: '倒角尺寸模式' }).selectOption('pitch');
+  await expect(page.getByTestId('chamfer-size')).toHaveText('0.90 mm / 45°');
+  await page.getByRole('combobox', { name: '倒角尺寸模式' }).selectOption('custom');
+  await expect(page.getByLabel('倒角尺寸 C（深度 / 径向增量）', { exact: true })).toHaveValue('0.5');
+  await page.getByTestId('thread-chamfer').uncheck();
+  await expect(page.getByTestId('chamfer-size')).toHaveCount(0);
+  await page.getByRole('button', { name: '↶ 撤销', exact: true }).click(); await expect(page.getByTestId('thread-chamfer')).toBeChecked();
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByTestId('thread-chamfer')).toHaveAccessibleName('Thread entry lead-in chamfer');
+  await page.reload(); await expect(page.getByTestId('model-status')).toContainText('Model ready', { timeout: 30000 });
+  await expect(page.getByTestId('chamfer-size')).toHaveText('0.50 mm / 45°');
+  await page.getByTestId('accept-warnings').check();
+  for (const format of ['step', 'stl'] as const) {
+    const pending = page.waitForEvent('download'); await page.getByTestId(`export-${format}`).click();
+    const file = await pending; expect(file.suggestedFilename()).toContain('C0.50-45deg');
+    const zip = unzipSync(readFileSync((await file.path())!));
+    const p = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
+    expect(p.schemaVersion).toBe(4); expect(p.central.thread.chamfer).toEqual({ enabled: true, mode: 'custom', sizeMm: 0.5 });
+    expect(strFromU8(zip['THREAD-ENTRY.txt'])).toContain('fixed 45 degrees');
+    expect(Object.keys(zip).some(n => n.endsWith(`.${format}`))).toBe(true);
+  }
+  await page.screenshot({ path: testInfo.outputPath('thread-chamfer.png'), fullPage: true });
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem('lensboard-project-v1')!));
+  await page.getByLabel('Chamfer C (depth / radial increase)', { exact: true }).fill('2.5');
+  await expect(page.getByRole('alert')).toContainText('C below the thread'); await expect(page.getByTestId('export-step')).toBeDisabled();
+  const old = structuredClone(before); old.schemaVersion = 3; delete old.central.thread.chamfer;
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('input[type=file]').setInputFiles({ name: 'legacy-v3.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
+  await expect(page.getByTestId('thread-chamfer')).not.toBeChecked();
+  await expect(page.getByTestId('model-status')).toContainText('Model ready', { timeout: 30000 });
+  expect(errors).toEqual([]);
+});
+
+test('ALPA cap hole60 and M65 use end-face protection after JSON import and export', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('./');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  for (const mode of ['plain', 'thread'] as const) {
+    const p = defaultProject(); p.templateId = 'alpa-blank'; p.orientation.frontBack = true;
+    p.relief = { ...p.relief, enabled: true, width: 80, height: 80, radius: 8, diameter: 50, angle: 90 };
+    p.central.diameter = 60; p.central.mode = mode; p.central.thread.confirmed = mode === 'thread';
+    page.once('dialog', dialog => dialog.accept());
+    await page.locator('input[type=file]').setInputFiles({ name: `alpa-${mode}.json`, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(p)) });
+    await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('.metrics-panel')).toContainText('2.50 mm');
+    await page.getByTestId('accept-warnings').check();
+    const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
+    const file = await pending, zip = unzipSync(readFileSync((await file.path())!));
+    const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
+    expect(json.central.mode).toBe(mode); expect(json.generatorVersion).toBe('0.2.4');
+    expect(json.relief.width).toBe(80); expect(Object.keys(zip).some(n => n.endsWith('.step'))).toBe(true);
+  }
+  // Turning relief off must NOT exempt a 60 mm hole in the original ALPA board.
+  await page.locator('.relief-panel summary').click(); await page.getByTestId('relief-enabled').uncheck();
+  await expect(page.getByRole('alert')).toContainText('模板保护区');
+  await expect(page.getByTestId('export-step')).toBeDisabled();
+  expect(errors).toEqual([]);
+});
+
+test('size-only relief accepts nonuniform templates and blocks only out-of-board base dimensions', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  await page.locator('.relief-panel summary').click(); await page.getByTestId('relief-enabled').check();
+  for (const id of ['linhof-blank', 'cambo-twr54-simplified-blank']) {
+    await page.getByRole('combobox', { name: '镜头板模板' }).selectOption(id);
+    await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('.manufacturing-note')).toContainText('不检查区域内的厚度');
+  }
+  await page.getByLabel('基座外长', { exact: true }).fill('100');
+  await expect(page.getByRole('alert')).toContainText('基座外尺寸超出镜头板');
+  await expect(page.getByTestId('export-step')).toBeDisabled();
+  await page.getByLabel('基座外长', { exact: true }).fill('60');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.getByRole('combobox', { name: '基座类型' }).selectOption('circle');
+  await page.getByLabel('基座外径', { exact: true }).fill('100');
+  await expect(page.getByRole('alert')).toContainText('基座外尺寸超出镜头板');
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Base outer dimensions exceed');
+});
+
+test('template flips rebuild exports, preserve final coordinates, undo, reset and world axes', async ({ page }, testInfo) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('./');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  await expect(page.getByTestId('world-axes')).toHaveAttribute('aria-label', '世界坐标轴 · +Z 正面');
+  await page.getByRole('combobox', { name: '镜头板模板' }).selectOption('alpa-blank');
+  await page.locator('.relief-panel summary').click(); await page.getByTestId('relief-enabled').check();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.getByTestId('template-front-back').check(); await page.getByTestId('template-up-down').check();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('lensboard-project-v1')!));
+  expect(stored.orientation).toEqual({ frontBack: true, upDown: true });
+  await page.getByTestId('accept-warnings').check();
+  const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
+  const downloaded = await pending, zip = unzipSync(readFileSync((await downloaded.path())!));
+  const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
+  expect(json.orientation).toEqual(stored.orientation); expect(json.schemaVersion).toBe(4);
+  await page.getByRole('button', { name: '↶ 撤销', exact: true }).click();
+  await expect(page.getByTestId('template-front-back')).toBeChecked(); await expect(page.getByTestId('template-up-down')).not.toBeChecked();
+  await page.getByRole('button', { name: '↷ 重做', exact: true }).click(); await expect(page.getByTestId('template-up-down')).toBeChecked();
+  await page.reload(); await expect(page.getByTestId('template-front-back')).toBeChecked(); await expect(page.getByTestId('template-up-down')).toBeChecked();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.getByRole('button', { name: '立体', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('flipped-world-axes.png'), fullPage: true });
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByLabel('Flip front / back', { exact: true })).toBeChecked();
+  await expect(page.getByTestId('world-axes')).toHaveAttribute('aria-label', 'World axes · +Z front');
+  await page.getByRole('combobox', { name: 'Lensboard template' }).selectOption('sinar-blank');
+  await expect(page.getByTestId('template-front-back')).not.toBeChecked(); await expect(page.getByTestId('template-up-down')).not.toBeChecked();
+  await expect(page.getByTestId('model-status')).toContainText('Model ready', { timeout: 30000 });
+  expect(errors).toEqual([]);
+});
+
+test('relief controls, end-face machining, edges and schema 1 migration', async ({ page }, testInfo) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('./');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  await expect(page.getByTestId('show-edges')).toBeChecked();
+  const before = await page.evaluate(() => localStorage.getItem('lensboard-project-v1'));
+  await page.getByTestId('show-edges').uncheck();
+  expect(await page.evaluate(() => localStorage.getItem('lensboard-project-v1'))).toBe(before);
+  await page.getByTestId('show-edges').check();
+  await page.locator('.relief-panel summary').click();
+  await page.getByTestId('relief-enabled').check();
+  await expect(page.getByLabel('间距（+凸 / −凹）')).toHaveValue('17');
+  await expect(page.getByLabel('壁厚（法向，向内）')).toHaveValue('2');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await expect(page.locator('.metrics-panel')).toContainText('2.50 mm');
+  await page.getByRole('button', { name: '侧面', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('raised-side.png'), fullPage: true });
+  await page.getByRole('button', { name: '立体', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('raised-iso.png'), fullPage: true });
+  await page.getByLabel('间距（+凸 / −凹）').fill('-17');
+  await page.getByRole('combobox', { name: '基座类型' }).selectOption('circle');
+  await page.getByLabel('壁倾角', { exact: true }).fill('90');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.screenshot({ path: testInfo.outputPath('recessed-iso.png'), fullPage: true });
+  await page.getByTestId('accept-warnings').check();
+  const event = page.waitForEvent('download'); await page.getByTestId('export-step').click();
+  const file = await event; const path = testInfo.outputPath('relief-step.zip'); await file.saveAs(path);
+  expect(file.suggestedFilename()).toContain('recessed-17mm');
+  const zip = unzipSync(readFileSync(path)), json = JSON.parse(strFromU8(zip[Object.keys(zip).find(k => k.endsWith('.json'))!]));
+  expect(json.schemaVersion).toBe(4); expect(json.generatorVersion).toBe('0.2.4');
+  expect(json.relief).toMatchObject({ enabled: true, spacing: -17, shape: 'circle', angle: 90 });
+  await page.getByLabel('名义孔径', { exact: true }).fill('54');
+  await expect(page.getByRole('alert')).toContainText('超出端面内腔');
+  await expect(page.getByTestId('export-step')).toBeDisabled();
+  await page.getByLabel('名义孔径', { exact: true }).fill('34.6');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.getByLabel('间距（+凸 / −凹）').fill('0');
+  await expect(page.getByRole('alert')).toContainText('凸 / 凹板尺寸无效');
+  await expect(page.getByTestId('export-step')).toBeDisabled();
+  const legacy = JSON.parse(before!); delete legacy.relief; delete legacy.orientation; delete legacy.central.thread.chamfer; legacy.schemaVersion = 1; legacy.generatorVersion = '0.1.0';
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('input[type=file]').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(legacy)) });
+  await expect(page.getByTestId('relief-enabled')).not.toBeChecked();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('lensboard-project-v1')!));
+  expect(stored.schemaVersion).toBe(4); expect(stored.central.diameter).toBe(34.6); expect(stored.central.thread.chamfer.enabled).toBe(false);
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByTestId('relief-enabled')).toHaveAccessibleName('Enable raised / recessed board');
+  expect(errors).toEqual([]);
+});
+
+test('dark theme defaults despite light system, persists independently, and Report targets project issues', async ({ page }, testInfo) => {
+  await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
     (window as unknown as { cadBuilds: number }).cadBuilds = 0;
     const original = Worker.prototype.postMessage;
@@ -22,6 +202,8 @@ test('dark theme follows system, persists independently, and Report targets proj
   await expect(page.getByTestId('report-link')).toHaveAttribute('target', '_blank');
   await expect(page.getByTestId('report-link')).toHaveAttribute('rel', 'noopener noreferrer');
   await page.screenshot({ path: testInfo.outputPath('dark-studio.png'), fullPage: true });
+  await page.getByTestId('show-edges').uncheck();
+  await page.getByTestId('show-edges').check();
   await page.getByTestId('theme-toggle').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await expect(page.getByTestId('theme-toggle')).toHaveAccessibleName('切换为暗色主题');
@@ -88,11 +270,12 @@ test('validation blocks stale exports; edits and undo remain usable', async ({ p
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
 });
 
-test('all six templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
+test('all ten templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
   await page.goto('./');
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
   const templates = page.getByRole('combobox', { name: '镜头板模板', exact: true });
-  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'graflex-pacemaker45-simplified-blank', 'sinar-simplified-blank', 'sinar-blank']) {
+  await expect(templates.locator('option')).toHaveCount(10);
+  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'graflex-pacemaker45-simplified-blank', 'sinar-simplified-blank', 'alpa-blank', 'arca141-blank', 'cambo-twr54-simplified-blank', 'toyo158-simplified-blank', 'sinar-blank']) {
     await templates.selectOption(id);
     await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
     await expect(page.getByRole('alert')).toHaveCount(0);

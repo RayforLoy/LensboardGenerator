@@ -40,7 +40,8 @@ async function execute(request: Request) {
       current = await buildModel(request.project, request.template, blob);
       const mesh = previewMesh(current);
       revision = token; project = request.project;
-      post({ type: 'model', revision: token, mesh, bounds: current.bounds, volume: current.volume, localThickness: current.localThickness, solidCount: current.solidCount, warnings: current.warnings, elapsedMs: performance.now() - start });
+      const edges = current.shape.meshEdges({ tolerance: 0.08, angularTolerance: 0.18 }).lines;
+      post({ type: 'model', revision: token, mesh, edges, bounds: current.bounds, volume: current.volume, localThickness: current.localThickness, solidCount: current.solidCount, warnings: current.warnings, elapsedMs: performance.now() - start });
     } else {
       if (!current || token !== revision) throw new GeometryError('stale');
       post({ type: 'stage', revision: token, stage: 'exporting' });

@@ -7,7 +7,7 @@ export type Request =
   | { type: 'export'; revision: string; format: 'step' | 'stl' };
 export type Result =
   | { type: 'stage'; revision: string; stage: 'loading' | 'building' | 'exporting' }
-  | { type: 'model'; revision: string; mesh: ShapeMesh; bounds: [SimplePoint, SimplePoint]; volume: number; localThickness: number; solidCount: number; warnings: Issue[]; elapsedMs: number }
+  | { type: 'model'; revision: string; mesh: ShapeMesh; edges: number[]; bounds: [SimplePoint, SimplePoint]; volume: number; localThickness: number; solidCount: number; warnings: Issue[]; elapsedMs: number }
   | { type: 'export'; revision: string; format: 'step' | 'stl'; bytes: ArrayBuffer }
   | { type: 'error'; revision: string; code: string; feature?: string; detail: string; during: 'build' | 'export' };
 export type ModelResult = Extract<Result, { type: 'model' }>;

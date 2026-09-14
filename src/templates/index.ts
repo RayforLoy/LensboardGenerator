@@ -5,12 +5,17 @@ import horsemanSimple from '../../steps/Horseman_Lensboard_simplified_blank.STEP
 import linhof from '../../steps/Linhof_Lensboard_blank.STEP?url';
 import sinar from '../../steps/Sinar_Lensboard_blank.STEP?url';
 import sinarSimple from '../../steps/Sinar_Lensboard_simplified_blank.STEP?url';
+import alpa from '../../steps/ALPA_Lensboard_blank.STEP?url';
+import arca from '../../steps/Arca141_Lensboard_blank.STEP?url';
+import cambo from '../../steps/CAMBO TWR54_Lensboard_simplified_blank.STEP?url';
+import toyo from '../../steps/TOYO158_Lensboard_simplified_blank.STEP?url';
 
 export interface Template {
   id: string; version: string; name: string; variant: 'full' | 'simple';
   url: string; file: string; sha256: string;
   // Explicit source Y thickness → canonical +Z. Refined by CAD inspection.
   rotationX: number; editableRadius: number; sourceShiftX?: number; sourceMinY?: number;
+  sourceType?: 'step' | 'stl';
 }
 export const templates: Template[] = [
   { id: 'sinar-blank', name: 'Sinar', variant: 'full', url: sinar, file: 'Sinar_Lensboard_blank.STEP', sha256: 'c872fb79b3f8086298246c724a03df2e63bd32291a5753b6b488ae19e9d6e9a5', rotationX: 90, editableRadius: 54, version: '1' },
@@ -19,5 +24,9 @@ export const templates: Template[] = [
   { id: 'horseman-simplified-blank', name: 'Horseman', variant: 'simple', url: horsemanSimple, file: 'Horseman_Lensboard_simplified_blank.STEP', sha256: '177010be377336d4d0e5faacf5b08fd44e8b46e6d00dbee940f86e763201fcd3', rotationX: 90, editableRadius: 35, version: '1' },
   { id: 'linhof-blank', name: 'Linhof', variant: 'full', url: linhof, file: 'Linhof_Lensboard_blank.STEP', sha256: '3f648ccce649828d3de797bf779991610c879fa9ec90cce2a05f0c2d3def9bdb', rotationX: 90, editableRadius: 35, version: '1' },
   { id: 'graflex-pacemaker45-simplified-blank', name: 'Graflex Pacemaker 4×5', variant: 'simple', url: graflex, file: 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP', sha256: 'cedd27ada02959bd200d4916438f101240282fb46b2ba1d14a76f59f4b027ecc', rotationX: 90, editableRadius: 35, version: '1' },
+  { id: 'alpa-blank', name: 'ALPA', variant: 'full', url: alpa, file: 'ALPA_Lensboard_blank.STEP', sha256: '986ad6493b9b094e8004ae934dc03409c58e12a4b5cef587417f7126c967d12c', rotationX: 90, editableRadius: 30, version: '1' },
+  { id: 'arca141-blank', name: 'Arca 141', variant: 'full', url: arca, file: 'Arca141_Lensboard_blank.STEP', sha256: 'd22eefdd89cfdc3a33a6abb26802560067902b38a11d6510fe2586bc7de778bf', rotationX: 90, editableRadius: 54, version: '1' },
+  { id: 'cambo-twr54-simplified-blank', name: 'CAMBO TWR54', variant: 'simple', url: cambo, file: 'CAMBO TWR54_Lensboard_simplified_blank.STEP', sha256: '04a5fe3be495fcf2fffbce2ccac948436af70aa6dc62adfe1391f1792376cca6', rotationX: 90, editableRadius: 26, version: '1' },
+  { id: 'toyo158-simplified-blank', name: 'TOYO 158', variant: 'simple', url: toyo, file: 'TOYO158_Lensboard_simplified_blank.STEP', sha256: 'beb273db71c74ead970c12d36b0082f23524df5f6d6bf88c6f32386f273d83d7', rotationX: 90, editableRadius: 62, version: '1' },
 ];
 export const templateById = (id: string) => templates.find(t => t.id === id);

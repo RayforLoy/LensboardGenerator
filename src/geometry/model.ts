@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-import { importSTEP, makeCylinder, makeBox, makeCompound, measureVolume, getOC, sketchHelix, draw, Plane, type Shape3D, type AnyShape, type ShapeMesh, type SimplePoint, type Sketch } from 'replicad';
-import { actualDiameter, countersinkDepth, patternHoles, validate, type Project, type Hole, type Issue } from '../domain/project';
+import { importSTEP, makeCylinder, makeBox, makeCompound, measureVolume, getOC, sketchHelix, draw, drawCircle, drawRoundedRectangle, Plane, type Shape3D, type AnyShape, type ShapeMesh, type SimplePoint, type Sketch } from 'replicad';
+import { actualDiameter, countersinkDepth, patternHoles, reliefDimensions, reliefApertureFits, reliefWithinBoard, threadBoreRadius, threadChamferSize, threadEnvelopeRadius, validate, type Project, type Hole, type Issue } from '../domain/project';
 import type { Template } from '../templates';
 
 export class GeometryError extends Error {
@@ -29,6 +29,85 @@ function intersect(body: Shape3D, tool: AnyShape): Shape3D {
 }
 function cylinder(radius: number, z0: number, z1: number, x = 0, y = 0) {
   return makeCylinder(radius, z1 - z0, [x, y, z0]);
+}
+function fuse(body: Shape3D, tool: Shape3D): Shape3D {
+  try { const result = body.fuse(tool); body.delete(); return result; } finally { tool.delete(); }
+}
+function reliefProfile(r: Project['relief'], inset: number, z: number): Sketch {
+  const dims = reliefDimensions(r);
+  const drawing = r.shape === 'circle' ? drawCircle(dims.width / 2 - inset)
+    : drawRoundedRectangle(dims.width - 2 * inset, dims.height - 2 * inset, Math.max(0, r.radius - inset));
+  return drawing.sketchOnPlane('XY', z) as Sketch;
+}
+function reliefPrism(r: Project['relief'], inset: number, z0: number, z1: number): Shape3D {
+  const sketch = reliefProfile(r, inset, z0);
+  try { return sketch.extrude(z1 - z0); } finally { sketch.delete(); }
+}
+function reliefLoft(r: Project['relief'], inset0: number, inset1: number, z0: number, z1: number): Shape3D {
+  if (Math.abs(inset1 - inset0) < 1e-9) return reliefPrism(r, inset0, z0, z1);
+  // Offset corners disappear at inset=radius. Split there so radius does not
+  // interpolate past that event over the entire wall and distort the corner taper.
+  if (r.shape === 'roundedRectangle' && r.radius > inset0 + 1e-8 && r.radius < inset1 - 1e-8) {
+    const at = z0 + (z1 - z0) * (r.radius - inset0) / (inset1 - inset0);
+    const first = reliefLoft(r, inset0, r.radius, z0, at);
+    try { return fuse(first, reliefLoft(r, r.radius, inset1, at, z1)); }
+    catch (error) { first.delete(); throw error; }
+  }
+  const a = reliefProfile(r, inset0, z0), b = reliefProfile(r, inset1, z1);
+  try { return a.loftWith(b, { ruled: true }); } finally { a.delete(); b.delete(); }
+}
+// Base dimensions remain outside dimensions; wall thickness is normal to the slope.
+function applyRelief(body: Shape3D, p: Project, extras: Shape3D[]): Shape3D {
+  let result = body;
+  let outer: Shape3D | undefined;
+  try {
+    const r = p.relief, dims = reliefDimensions(r);
+    const b = boundsOf(body);
+    if (!reliefWithinBoard(r, b)) throw new GeometryError('reliefBoundary', 'relief');
+    const [lo, hi] = localSurfaces(body, 0, 0), end = hi + r.spacing;
+    if (hi - lo <= 0.02) throw new GeometryError('thin', 'relief');
+    // Check physical three-dimensional clearance, not an accessory's XY bounding box.
+    const clearance = reliefLoft(r, -1.5, dims.shrink - 1.5, hi, end);
+    let envelope = clearance;
+    try {
+      if (r.spacing < 0) envelope = fuse(envelope, reliefPrism(r, dims.shrink - 1.5, end - r.faceThickness, end));
+      for (const extra of extras) {
+        const overlap = extra.intersect(envelope);
+        try {
+          if (!overlap.isNull && measureVolume(overlap) > 1e-7) throw new GeometryError('reliefAccessory', 'relief');
+        } finally { overlap.delete(); }
+      }
+    } finally { envelope.delete(); }
+    const overlap = 0.01;
+    // Clear the original membrane before adding the cup, including shallow recesses
+    // whose cap would otherwise retain extra original material underneath it.
+    result = cut(result, reliefPrism(r, dims.inset, b[0][2] - 1, b[1][2] + 1));
+    // Extend only the constant base section into the template: nominal taper begins at hi.
+    outer = reliefLoft(r, 0, dims.shrink, hi, end);
+    if (r.spacing > 0) outer = fuse(outer, reliefPrism(r, 0, hi - overlap, hi));
+    if (r.spacing < 0) outer = fuse(outer, reliefPrism(r, dims.shrink, end - r.faceThickness, end));
+    if (r.shape === 'circle') {
+      // A circular section is rotationally invariant. Separate cylindrical seams
+      // from the inner cutter's seam to avoid OCCT coincident-seam classification.
+      const rotated = outer.rotate(2); outer.delete(); outer = rotated;
+    }
+    const shell = outer; outer = undefined;
+    result = fuse(result, shell);
+    if (r.spacing > 0) {
+      result = cut(result, reliefPrism(r, dims.inset, lo - 1, hi));
+      const capBack = end - r.faceThickness;
+      const capInset = dims.inset + dims.shrink * (capBack - hi) / r.spacing;
+      result = cut(result, reliefLoft(r, dims.inset, capInset, hi, capBack));
+    } else {
+      result = cut(result, reliefPrism(r, dims.inset, hi, boundsOf(result)[1][2] + 1));
+      result = cut(result, reliefLoft(r, dims.inset, dims.inset + dims.shrink, hi, end));
+    }
+    if (!isValid(result) || solidCount(result) !== 1) throw new GeometryError('invalidSolid', 'relief');
+    return result;
+  } catch (error) {
+    result.delete();
+    throw error;
+  } finally { outer?.delete(); }
 }
 // Read actual local surfaces from a material probe, not from overall Z extent.
 function localSurfaces(body: Shape3D, x: number, y: number): [number, number] {
@@ -81,18 +160,30 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
   const extras: Shape3D[] = [];
   let shape: Shape3D | undefined;
   const warnings: Issue[] = [{ code: 'experimental', warning: true }];
+  let reliefFront: number | undefined;
   try {
     if (p.kind === 'board') {
       if (!template || !blob) throw new GeometryError('template');
       const raw = await importSTEP(blob);
       if (!isValid(raw)) { raw.delete(); throw new GeometryError('invalidSolid'); }
       const source = boundsOf(raw);
-      const normalized = raw.rotate(template.rotationX, [0, 0, 0], [1, 0, 0]).translate(template.id.startsWith('graflex') ? -150 : 0, 0, -source[0][1]);
+      const rotated = raw.rotate(template.rotationX, [0, 0, 0], [1, 0, 0]); raw.delete();
+      const normalized = rotated.translate(template.id.startsWith('graflex') ? -150 : 0, 0, -source[0][1]); rotated.delete();
       const solids = normalized.solids;
       normalized.delete();
       solids.sort((a, b) => measureVolume(b) - measureVolume(a));
       if (!solids.length) throw new GeometryError('invalidSolid');
       body = solids[0]; extras.push(...solids.slice(1));
+      // Use the PRIMARY board datum, never the assembly's taller auxiliary body.
+      const boardBounds = boundsOf(body), pivot: SimplePoint = [0, 0, (boardBounds[0][2] + boardBounds[1][2]) / 2];
+      function orient(part: Shape3D): Shape3D {
+        let result = part;
+        if (p.orientation.frontBack) { const next = result.rotate(180, pivot, [0, 1, 0]); result.delete(); result = next; }
+        if (p.orientation.upDown) { const next = result.rotate(180, [0, 0, 0], [0, 0, 1]); result.delete(); result = next; }
+        return result;
+      }
+      body = orient(body);
+      for (let i = 0; i < extras.length; i++) extras[i] = orient(extras[i]);
       // Explicitly preserve Horseman's auxiliary body; central machining cannot touch it.
     } else {
       const f = p.flange;
@@ -102,6 +193,14 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
         const combined = body.fuse(step); body.delete(); step.delete(); body = combined;
       }
     }
+    if (p.relief.enabled && template) {
+      reliefFront = localSurfaces(body, 0, 0)[1] + p.relief.spacing;
+      const original = body; body = undefined;
+      body = applyRelief(original, p, extras);
+      warnings.push({ code: 'reliefFit', feature: 'relief', warning: true });
+      warnings.push({ code: 'reliefUnchecked', feature: 'relief', warning: true });
+      if (p.relief.wall < 1.5 || p.relief.faceThickness < 1.5) warnings.push({ code: 'thin', feature: 'relief', warning: true });
+    }
     const originalSolids = solidCount(body);
     const b = boundsOf(body), lowAll = b[0][2] - 1, highAll = b[1][2] + 1;
     const c = p.central;
@@ -109,7 +208,20 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
     let apertureSurfaces: [number, number] | undefined;
     const envelopes: { x: number; y: number; radius: number; id: string }[] = [];
     function checkRegion(x: number, y: number, radius: number, id: string) {
-      if (p.kind === 'board' && template && Math.hypot(x, y) + radius + 1.5 > template.editableRadius) throw new GeometryError('protected', id);
+      let local: [number, number];
+      try { local = localSurfaces(body!, x, y); }
+      catch (err) {
+        // Keep the existing protected-region message for points outside the source board.
+        if (err instanceof GeometryError && err.code === 'outside' && p.kind === 'board' && template && Math.hypot(x, y) + radius + 1.5 > template.editableRadius) throw new GeometryError('protected', id);
+        if (err instanceof GeometryError) err.feature = id;
+        throw err;
+      }
+      // Identify the ACTUAL end-face material, including after a seat has thinned it.
+      // A shallow recess can share Z with old stock, so also require its XY cavity.
+      const onEndFace = reliefFront !== undefined && reliefApertureFits(p.relief, x, y, 0, 0)
+        && local[0] >= reliefFront - p.relief.faceThickness - 1e-5 && local[1] <= reliefFront + 1e-5;
+      if (onEndFace && !reliefApertureFits(p.relief, x, y, radius)) throw new GeometryError('reliefAperture', id);
+      if (!onEndFace && p.kind === 'board' && template && Math.hypot(x, y) + radius + 1.5 > template.editableRadius) throw new GeometryError('protected', id);
       if (p.kind === 'flange') {
         const f = p.flange;
         for (let i = 0; i < f.slotCount; i++) {
@@ -134,7 +246,10 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
         if (gap < 1.5) warnings.push({ code: 'thin', feature: id, warning: true });
       }
       envelopes.push({ x, y, radius, id });
-      try { return footprint(body!, x, y, radius + 1.5); }
+      try {
+        const surfaces = footprint(body!, x, y, radius + 1.5);
+        return surfaces;
+      }
       catch (err) { if (err instanceof GeometryError) err.feature = id; throw err; }
     }
     if (p.seat.enabled) {
@@ -147,12 +262,14 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
       if (remaining < 1.5) warnings.push({ code: 'thin', feature: 'seat', warning: true });
     }
     if (c.enabled) {
-      const t = c.thread, radius = c.mode === 'plain' ? actualDiameter(p) / 2 : (t.mode === 'tapDrill' ? t.tapDiameter / 2 : t.diameter / 2 + t.clearance);
+      const t = c.thread, radius = c.mode === 'plain' ? actualDiameter(p) / 2 : threadEnvelopeRadius(t);
       const [lo, hi] = checkRegion(c.x, c.y, radius, 'central'); localThickness = hi - lo; apertureSurfaces = [lo, hi];
       if (c.mode === 'plain') body = cut(body, cylinder(radius, lowAll, highAll, c.x, c.y));
       else {
         if (t.length > localThickness + 1e-5) throw new GeometryError('depth', 'central');
-        if (t.mode === 'tapDrill') body = cut(body, cylinder(radius, lowAll, highAll, c.x, c.y));
+        const chamfer = threadChamferSize(t);
+        if (chamfer >= localThickness - 1e-5) throw new GeometryError('chamferDepth', 'central');
+        if (t.mode === 'tapDrill') body = cut(body, cylinder(t.tapDiameter / 2, lowAll, highAll, c.x, c.y));
         else {
           const dims = threadDimensions(t.diameter, t.pitch);
           body = cut(body, cylinder(dims.minorDiameter / 2 + t.clearance, lowAll, highAll, c.x, c.y).rotate(2));
@@ -171,6 +288,13 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
           } finally { groove.delete(); }
           const expectedRemoval = Math.PI * (t.diameter - dims.radialDepth) * dims.radialDepth * (dims.rootWidth + dims.apexWidth) / 2 * t.length / t.pitch;
           if (before - measureVolume(body) < expectedRemoval * 0.5) throw new GeometryError('threadFailed', 'central');
+        }
+        if (chamfer > 0) {
+          // 45° entry from the minor/tap bore: radial growth equals axial depth.
+          // Overshoot the front plane without changing the cone at the actual surface.
+          const bore = threadBoreRadius(t);
+          body = cut(body, cone(bore, bore + chamfer + 0.01, hi - chamfer, hi + 0.01, c.x, c.y));
+          if (t.mode === 'modeled' && t.length - chamfer < 2 * t.pitch) warnings.push({ code: 'chamferEngagement', feature: 'central', warning: true });
         }
       }
     }

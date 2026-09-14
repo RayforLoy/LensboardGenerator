@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { actualDiameter, defaultProject, newHole, parseProject, patternHoles, presets, SOURCE_URL, GENERATOR_SOURCE_URL, validate, type Project, type Hole, type Face } from './domain/project';
+import { actualDiameter, APP_VERSION, defaultProject, newHole, parseProject, patternHoles, presets, SOURCE_URL, GENERATOR_SOURCE_URL, threadChamferSize, threadEnvelopeRadius, validate, type Project, type Hole, type Face } from './domain/project';
 import { templates, templateById } from './templates';
 import { translator, errorText, type Key, type Language } from './i18n';
 import { useCad } from './features/useCad';
@@ -45,7 +45,7 @@ export default function App() {
   function redo() { setHistory(h => h.future.length ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h); }
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#111b17' : '#f5f6f1');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#06121f' : '#f5f6f1');
     try { localStorage.setItem('lensboard-theme', theme); } catch { /* Theme still works without storage. */ }
   }, [theme]);
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function App() {
   function editHole(id: string, recipe: (hole: Hole) => void) { update(d => { const hole = d.holes.find(h => h.id === id); if (hole) recipe(hole); }); }
   return <>
     <header className="topbar">
-      <a className="brand" href="#"><span className="brand-mark">◈</span><span>LENSBOARD<span className="brand-secondary"> STUDIO</span></span><small>v0.1 / ALPHA</small></a>
+      <a className="brand" href="#"><span className="brand-mark">◈</span><span>LENSBOARD<span className="brand-secondary"> STUDIO</span></span><small>v{APP_VERSION} / ALPHA</small></a>
       <div className="top-actions"><span className="privacy"><span className="live-dot" />{t('privacy')}</span><a className="report-button" href={PROJECT_ISSUES_URL} target="_blank" rel="noopener noreferrer" aria-label={t('reportHint')} title={t('reportHint')} data-testid="report-link">Report ↗</a><button className="theme-button" aria-label={t(theme === 'dark' ? 'switchLight' : 'switchDark')} title={t(theme === 'dark' ? 'switchLight' : 'switchDark')} aria-pressed={theme === 'dark'} onClick={() => setTheme(value => value === 'dark' ? 'light' : 'dark')} data-testid="theme-toggle">◐ {t('theme')}</button><div className="language" role="group" aria-label={t('language')}><button aria-pressed={language === 'zh-CN'} onClick={() => setLanguage('zh-CN')}>中文</button><button aria-pressed={language === 'en'} onClick={() => setLanguage('en')}>EN</button></div></div>
     </header>
     <main>
@@ -81,10 +81,13 @@ export default function App() {
       {banner && <div className="banner" role="alert">{t(banner)}<button aria-label={t('remove')} onClick={() => setBanner(undefined)}>×</button></div>}
       <div className="workspace">
         <aside className="editor">
-          <div className="segmented" role="group" aria-label={t('template')}>{(['board', 'flange'] as const).map(kind => <button key={kind} aria-pressed={p.kind === kind} onClick={() => update(d => { d.kind = kind; })}>{t(kind)}</button>)}</div>
+          <div className="segmented" role="group" aria-label={t('template')}>{(['board', 'flange'] as const).map(kind => <button key={kind} aria-pressed={p.kind === kind} onClick={() => update(d => { d.kind = kind; if (kind === 'flange') d.relief.enabled = false; })}>{t(kind)}</button>)}</div>
           {p.kind === 'board' ? <section className="panel">
             <h2><span>01</span>{t('template')}</h2>
-            <select className="template-select" aria-label={t('template')} value={p.templateId} onChange={e => update(d => { d.templateId = e.target.value; d.templateVersion = '1'; })}>{templates.map(item => <option value={item.id} key={item.id}>{item.name} · {t(item.variant)}</option>)}</select>
+            <select className="template-select" aria-label={t('template')} value={p.templateId} onChange={e => update(d => { d.templateId = e.target.value; d.templateVersion = '1'; d.orientation = { frontBack: false, upDown: false }; })}>{templates.map(item => <option value={item.id} key={item.id}>{item.name} · {t(item.variant)}</option>)}</select>
+            <Check label={t('flipFrontBack')} checked={p.orientation.frontBack} onChange={v => update(d => { d.orientation.frontBack = v; })} testId="template-front-back" />
+            <Check label={t('flipUpDown')} checked={p.orientation.upDown} onChange={v => update(d => { d.orientation.upDown = v; })} testId="template-up-down" />
+            <p className="help">{t('orientationHint')}</p>
             <div className="template-note"><span>STEP / GPL v3</span><small>{t('experimental')}</small></div>
           </section> : <section className="panel"><h2><span>01</span>{t('flange')}</h2><div className="field-grid">
             {field('outer', p.flange.diameter, (d, v) => { d.flange.diameter = v; })}
@@ -116,13 +119,34 @@ export default function App() {
                 <Check label={t('leftHand')} checked={p.central.thread.leftHand} onChange={v => update(d => { d.central.thread.leftHand = v; })} />
                 <label className="select-field"><span>{t('threadMode')}</span><select value={p.central.thread.mode} onChange={e => update(d => { d.central.thread.mode = e.target.value as 'modeled' | 'tapDrill'; })}><option value="modeled">{t('modeled')}</option><option value="tapDrill">{t('tapDrill')}</option></select></label>
                 {p.central.thread.mode === 'tapDrill' && field('tapDiameter', p.central.thread.tapDiameter, (d, v) => { d.central.thread.tapDiameter = v; })}
+                <div className="print-option">
+                  <Check label={t('threadChamfer')} checked={p.central.thread.chamfer.enabled} onChange={v => update(d => { d.central.thread.chamfer.enabled = v; })} testId="thread-chamfer" />
+                  {p.central.thread.chamfer.enabled && <>
+                    <label className="select-field"><span>{t('chamferMode')}</span><select aria-label={t('chamferMode')} value={p.central.thread.chamfer.mode} onChange={e => update(d => {
+                      d.central.thread.chamfer.mode = e.target.value as 'pitch' | 'custom';
+                    })}><option value="pitch">{t('chamferAuto')}</option><option value="custom">{t('chamferCustom')}</option></select></label>
+                    {p.central.thread.chamfer.mode === 'custom' && field('chamferSize', p.central.thread.chamfer.sizeMm, (d, v) => { d.central.thread.chamfer.sizeMm = v; }, 'mm', 0.1, 0.01)}
+                    <p><span>{t('chamferActual')}: </span><output data-testid="chamfer-size">{threadChamferSize(p.central.thread).toFixed(2)} mm / 45°</output></p>
+                    {p.central.thread.mode === 'modeled' && <p>{t('chamferRemaining')}: <output data-testid="chamfer-remaining">{Math.max(0, p.central.thread.length - threadChamferSize(p.central.thread)).toFixed(2)} mm</output></p>}
+                  </>}
+                  <p className="help">{t('chamferHint')}</p>
+                </div>
                 <Check label={t('confirm')} checked={p.central.thread.confirmed} onChange={v => update(d => { d.central.thread.confirmed = v; })} />
                 <p className="help">{t('threadHint')}</p>
               </>}
               <div className="field-grid">{field('x', p.central.x, (d, v) => { d.central.x = v; })}{field('y', p.central.y, (d, v) => { d.central.y = v; })}</div>
             </>}
           </section>
-          <details className="panel" open={p.holes.length > 0}><summary><span>03</span>{t('holes')}<small>{p.holes.length}</small></summary>
+          {p.kind === 'board' && <details className="panel relief-panel"><summary><span>03</span>{t('relief')}</summary>
+            <Check label={t('reliefEnabled')} checked={p.relief.enabled} onChange={v => update(d => { d.relief.enabled = v; })} testId="relief-enabled" />
+            {p.relief.enabled && <>
+              <label className="select-field"><span>{t('baseShape')}</span><select aria-label={t('baseShape')} value={p.relief.shape} onChange={e => update(d => { d.relief.shape = e.target.value as Project['relief']['shape']; })}><option value="roundedRectangle">{t('roundedRectangle')}</option><option value="circle">{t('circle')}</option></select></label>
+              <div className="field-grid">{p.relief.shape === 'roundedRectangle' ? <>{field('baseWidth', p.relief.width, (d, v) => { d.relief.width = v; })}{field('baseHeight', p.relief.height, (d, v) => { d.relief.height = v; })}{field('baseRadius', p.relief.radius, (d, v) => { d.relief.radius = v; })}</> : field('baseDiameter', p.relief.diameter, (d, v) => { d.relief.diameter = v; })}
+                {field('wall', p.relief.wall, (d, v) => { d.relief.wall = v; })}{field('faceThickness', p.relief.faceThickness, (d, v) => { d.relief.faceThickness = v; })}{field('wallAngle', p.relief.angle, (d, v) => { d.relief.angle = v; }, '°', 1)}{field('spacing', p.relief.spacing, (d, v) => { d.relief.spacing = v; })}</div>
+              <p className="help">{t('reliefHint')}</p>
+            </>}
+          </details>}
+          <details className="panel" open={p.holes.length > 0}><summary><span>04</span>{t('holes')}<small>{p.holes.length}</small></summary>
             {!p.holes.length && <p className="help">{t('emptyHoles')}</p>}
             {p.holes.map((h, i) => <div className="hole-card" key={h.id} data-testid={`hole-${i}`}>
               <div className="hole-heading"><Check label={`${t('hole')} ${i + 1}`} checked={h.enabled} onChange={v => editHole(h.id, d => { d.enabled = v; })} /><div><button title={t('copy')} onClick={() => update(d => { d.holes.push({ ...h, id: crypto.randomUUID(), x: h.x + 8 }); })}>⧉</button><button aria-label={`${t('remove')} ${t('hole')} ${i + 1}`} onClick={() => update(d => { d.holes = d.holes.filter(item => item.id !== h.id); })}>×</button></div></div>
@@ -136,20 +160,20 @@ export default function App() {
             </div>)}
             <button className="add-button" disabled={p.holes.length >= 100} onClick={() => update(d => { d.holes.push(newHole()); })}>＋ {t('addHole')}</button>
           </details>
-          <details className="panel"><summary><span>04</span>{t('pattern')}</summary>
+          <details className="panel"><summary><span>05</span>{t('pattern')}</summary>
             <Check label={t('enabled')} checked={p.pattern.enabled} onChange={v => update(d => { d.pattern.enabled = v; })} />
             <div className="field-grid">{field('count', p.pattern.count, (d, v) => { d.pattern.count = v; }, '', 1)}{field('pcd', p.pattern.pcd, (d, v) => { d.pattern.pcd = v; })}{field('diameter', p.pattern.diameter, (d, v) => { d.pattern.diameter = v; })}{field('startAngle', p.pattern.startAngle, (d, v) => { d.pattern.startAngle = v; }, '°', 1)}{field('x', p.pattern.x, (d, v) => { d.pattern.x = v; })}{field('y', p.pattern.y, (d, v) => { d.pattern.y = v; })}</div>
             <Check label={t('patternSink')} checked={p.pattern.countersink} onChange={v => update(d => { d.pattern.countersink = v; })} />
             {p.pattern.countersink && <div className="field-grid">{field('recessDiameter', p.pattern.recessDiameter, (d, v) => { d.pattern.recessDiameter = v; })}{field('angle', p.pattern.angle, (d, v) => { d.pattern.angle = v; }, '°', 1)}<FaceSelect face={p.pattern.face} onChange={v => update(d => { d.pattern.face = v; })} t={t} /></div>}
           </details>
-          <details className="panel"><summary><span>05</span>{t('seat')}</summary>
+          <details className="panel"><summary><span>06</span>{t('seat')}</summary>
             <Check label={t('enabled')} checked={p.seat.enabled} onChange={v => update(d => { d.seat.enabled = v; })} />
             <div className="field-grid">{field('seatDiameter', p.seat.diameter, (d, v) => { d.seat.diameter = v; })}{field('remaining', p.seat.remainingThickness, (d, v) => { d.seat.remainingThickness = v; })}<FaceSelect face={p.seat.face} onChange={v => update(d => { d.seat.face = v; })} t={t} /></div>
           </details>
         </aside>
         <section className="preview-area">
           <div className="preview-toolbar"><span>{p.kind === 'board' ? `${selected.name} / ${t(selected.variant)}` : t('flange')}</span><div><button disabled={!history.past.length} onClick={undo}>↶ {t('undo')}</button><button disabled={!history.future.length} onClick={redo}>↷ {t('redo')}</button><button onClick={() => { if (window.confirm(t('resetConfirm'))) replace(defaultProject()); }}>{t('reset')}</button></div></div>
-          <div className="preview-shell"><Viewport model={model} language={language} /><div className={`model-status ${cad.ready ? 'ready' : ''}`} role="status" data-testid="model-status">{busy && <span className="spinner" />}{t(packaging ? 'exporting' : cad.state)}{model && cad.ready && <small>{(model.elapsedMs / 1000).toFixed(2)} s</small>}</div></div>
+          <div className="preview-shell"><Viewport model={model} language={language} sourceType={p.kind === 'board' ? selected.sourceType ?? 'step' : 'step'} /><div className={`model-status ${cad.ready ? 'ready' : ''}`} role="status" data-testid="model-status">{busy && <span className="spinner" />}{t(packaging ? 'exporting' : cad.state)}{model && cad.ready && <small>{(model.elapsedMs / 1000).toFixed(2)} s</small>}</div></div>
           {(cad.error || cad.issues.length > 0) && <div className="error-card" role="alert">{cad.issues.map((issue, i) => <p key={i}>{issue.feature ? `${issue.feature}: ` : ''}{errorText(issue.code, language)}</p>)}{cad.error && <p>{cad.error.feature ? `${cad.error.feature}: ` : ''}{errorText(cad.error.code, language)}</p>}<button onClick={cad.retry}>{t('retry')}</button></div>}
           <div className="preview-bottom">
             <section className="plot-panel"><h2>{t('plot')}<small>XY / mm</small></h2><HolePlot project={p} radius={p.kind === 'board' ? selected.editableRadius : p.flange.diameter / 2} bounds={model?.bounds} onPosition={(x, y) => update(d => { d.central.x = x; d.central.y = y; })} label={t('selectPosition')} /><p className="help">{t('protectedHint')}</p></section>
@@ -160,13 +184,13 @@ export default function App() {
           <div className="project-actions"><button disabled={validate(p).length > 0} onClick={() => download(`${fileStem(p)}.json`, JSON.stringify(p, null, 2), 'application/json')}>{t('json')}</button><button onClick={() => importInput.current?.click()}>{t('import')}</button><input ref={importInput} type="file" accept=".json,application/json" hidden onChange={e => { const file = e.target.files?.[0]; if (file) void importFile(file); e.target.value = ''; }} /><a href={`${import.meta.env.BASE_URL}LICENSE`} target="_blank" rel="noreferrer">{t('license')} ↗</a></div>
         </section>
       </div>
-    </main><footer><span>LENSBOARD STUDIO / OPEN DESIGN</span><a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.md`} target="_blank" rel="noreferrer">{t('thirdParty')}</a>{GENERATOR_SOURCE_URL && <a href={GENERATOR_SOURCE_URL} target="_blank" rel="noreferrer">{t('generatorSource')} ↗</a>}<span>mm · GPL-3.0-only · v0.1.0</span></footer>
+    </main><footer><span>LENSBOARD STUDIO / OPEN DESIGN</span><a href={`${import.meta.env.BASE_URL}THIRD_PARTY_NOTICES.md`} target="_blank" rel="noreferrer">{t('thirdParty')}</a>{GENERATOR_SOURCE_URL && <a href={GENERATOR_SOURCE_URL} target="_blank" rel="noreferrer">{t('generatorSource')} ↗</a>}<span>mm · GPL-3.0-only · v{APP_VERSION}</span></footer>
   </>;
 }
 
 function HolePlot({ project, radius, bounds, onPosition, label }: { project: Project; radius: number; bounds?: [[number, number, number], [number, number, number]]; onPosition(x: number, y: number): void; label: string }) {
   const size = Math.max(bounds ? Math.max(bounds[1][0] - bounds[0][0], bounds[1][1] - bounds[0][1]) + 12 : radius * 2 + 20, 60);
-  const half = size / 2, c = project.central, diameter = c.mode === 'plain' ? actualDiameter(project) : c.thread.diameter;
+  const half = size / 2, c = project.central, diameter = c.mode === 'plain' ? actualDiameter(project) : 2 * threadEnvelopeRadius(c.thread);
   const holes = [...project.holes.filter(h => h.enabled), ...patternHoles(project.pattern)].filter(h => Number.isFinite(h.x + h.y + h.diameter) && h.diameter > 0);
   return <svg className="hole-plot" viewBox={`${-half} ${-half} ${size} ${size}`} role="img" aria-label={label} onClick={e => {
     const svg = e.currentTarget, point = svg.createSVGPoint(); point.x = e.clientX; point.y = e.clientY;

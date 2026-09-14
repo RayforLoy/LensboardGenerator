@@ -1,6 +1,6 @@
 # 初始 STEP 模板目录
 
-登记日期：2026-09-14 · 清单版本：0.1 · 来源：用户自己绘制并提供的 `steps/` 文件。
+登记日期：2026-09-15 · 清单版本：0.2 · 来源：用户自己绘制并提供的 `steps/` 文件。四个新增模板尚未随本轮代码远端发布。
 
 用户已确认这些镜头板模板按 [GPL 第 3 版](../LICENSE)（GPL-3.0-only）开源。初始模板使用原始 STEP，不从 scadtest 重新复制 STL。所有原 STEP 保持字节不变；v0.1.0 已进行 WASM CAD 导入和导出后的独立 native OCCT 检查，尚未实物验收，见 [实施状态](IMPLEMENTATION_STATUS.md)。
 
@@ -14,6 +14,10 @@
 | `linhof-blank` | Linhof 空白板 | [Linhof_Lensboard_blank.STEP](../steps/Linhof_Lensboard_blank.STEP) | 98548 | 1 |
 | `sinar-blank` | Sinar 空白板 | [Sinar_Lensboard_blank.STEP](../steps/Sinar_Lensboard_blank.STEP) | 327988 | 1 |
 | `sinar-simplified-blank` | Sinar 简化空白板 | [Sinar_Lensboard_simplified_blank.STEP](../steps/Sinar_Lensboard_simplified_blank.STEP) | 173128 | 1 |
+| `alpa-blank` | ALPA 空白板 | [ALPA_Lensboard_blank.STEP](../steps/ALPA_Lensboard_blank.STEP) | 80552 | 1 |
+| `arca141-blank` | Arca 141 空白板 | [Arca141_Lensboard_blank.STEP](../steps/Arca141_Lensboard_blank.STEP) | 107289 | 1 |
+| `cambo-twr54-simplified-blank` | CAMBO TWR54 简化空白板 | [CAMBO TWR54_Lensboard_simplified_blank.STEP](../steps/CAMBO%20TWR54_Lensboard_simplified_blank.STEP) | 59502 | 1 |
+| `toyo158-simplified-blank` | TOYO 158 简化空白板 | [TOYO158_Lensboard_simplified_blank.STEP](../steps/TOYO158_Lensboard_simplified_blank.STEP) | 46182 | 1 |
 
 显示名称仅依据用户文件名，具体相机兼容范围尚待装机记录。原有完整 / 简化版本分别登记，不只保留一个版本。
 
@@ -33,6 +37,12 @@
 | Linhof | 96 × 98.6 × 4.45 | 2.5（Z=1.95…4.45） | 35 |
 | Sinar 完整 | 139.5 × 139.5 × 5.15 | 3.15（Z=0…3.15） | 54 |
 | Sinar 简化 | 139.5 × 139.5 × 5 | 3.15 | 54 |
+| ALPA | 88.5 × 88.5 × 3 | 2（Z=0…2） | 30 |
+| Arca 141 | 140.2 × 140.2 × 3.25 | 2.5（Z=0…2.5） | 54 |
+| CAMBO TWR54 简化 | 88.0403 × 86.3712 × 3.75 | 1.75（Z=2…3.75） | 26 |
+| TOYO 158 简化 | 158.6 × 158.6 × 6.5 | 2.5（Z=0…2.5） | 62 |
+
+新增四模板同样以 Y 为厚度轴，绕 X +90°、源最小 Y 平移到 Z=0；均有一个有效实体，中心 #0 通孔 34.6 mm 的实体建模与浏览器初始化已执行。CAMBO 的 Y 外形不对称，不用包围盒中心替换模板原点。保守圆区不是认证；60×60 mm 凸凹基座可能不适合小模板，需减小外轮廓并仍通过材料探针。
 
 候选圆区不是厂家保护区认证；每个孔另以「孔外半径 +1.5 mm」实体探针检查当地完整均匀材料。Horseman 的较大孔会跨越非均匀区域而被拒绝；附属实体保留在 STEP / STL 中，禁止加工其 XY 投影附近。Linhof 的 Y 包围盒不对称，不自动将光轴移动到包围盒中心。
 
@@ -40,12 +50,22 @@
 
 ## 原文件校验
 
+v0.2.3 新端面孔不使用原板 editableRadius；该半径和原 STEP 身份均未放宽 / 改写。ALPA 80×80、90°、+17 mm、端面 2.5 mm 的 Ø60 / M65×1 已通过几何及独立重读，实际原板大孔仍受 30 mm 保守保护半径限制。
+
+当前 v0.2.2 按用户要求取消下述历史基座材料校验，基座仅比较主板 XY 外尺寸范围、无额外余量。Linhof / CAMBO 默认 60×60 mm 凸凹可生成；跨厚度变化处可能切除筋位 / 安装 / 遮光结构，需人工确认，附件干涉和实体有效性仍会阻止失败输出。
+
+v0.2.1 可在选择模板后前后翻转（主板 Z 中点绕 Y 180°）/ 上下翻转（光轴原点绕 Z 180°），所有附属体一起旋转；上表保持未翻转的源基准，不因设计方向重写源 STEP 或哈希。非对称模板不会按 XY 包围盒重新居中，加工坐标始终是最终世界坐标，正面 +Z。基座不是通孔圆区：按实际外偏置轮廓检查完整当地材料及三维附件干涉。默认 R8 / 80° / +17 mm / #0 示例的 Linhof 56×56、CAMBO 52×52 几何可行，60×60 则覆盖非均匀结构；ALPA / Graflex 的 60×60 通过。上述不是实物装配认证。
+
 - `Graflex_pacemaker45_Lensboard_simplified_blank.STEP`：`cedd27ada02959bd200d4916438f101240282fb46b2ba1d14a76f59f4b027ecc`
 - `Horseman_Lensboard_blank.STEP`：`ced885b0320723dc0844e26b7b632e69629800f64d52f48486f26411774f902d`
 - `Horseman_Lensboard_simplified_blank.STEP`：`177010be377336d4d0e5faacf5b08fd44e8b46e6d00dbee940f86e763201fcd3`
 - `Linhof_Lensboard_blank.STEP`：`3f648ccce649828d3de797bf779991610c879fa9ec90cce2a05f0c2d3def9bdb`
 - `Sinar_Lensboard_blank.STEP`：`c872fb79b3f8086298246c724a03df2e63bd32291a5753b6b488ae19e9d6e9a5`
 - `Sinar_Lensboard_simplified_blank.STEP`：`180436f325463362d749aef3dbe200838985d6f47640b1c5a2d14e197816e20a`
+- `ALPA_Lensboard_blank.STEP`：`986ad6493b9b094e8004ae934dc03409c58e12a4b5cef587417f7126c967d12c`
+- `Arca141_Lensboard_blank.STEP`：`d22eefdd89cfdc3a33a6abb26802560067902b38a11d6510fe2586bc7de778bf`
+- `CAMBO TWR54_Lensboard_simplified_blank.STEP`：`04a5fe3be495fcf2fffbce2ccac948436af70aa6dc62adfe1391f1792376cca6`
+- `TOYO158_Lensboard_simplified_blank.STEP`：`beb273db71c74ead970c12d36b0082f23524df5f6d6bf88c6f32386f273d83d7`
 
 后续文件内容变化需更新模板版本和校验值，旧项目不得静默指向新几何。SHA-256 用于身份和完整性检查，不等于质量认证。
 

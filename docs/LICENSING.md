@@ -7,7 +7,7 @@
 ## 1. 范围
 
 - 本项目原创网页代码、项目自有文档及原创设计内容采用 GPL-3.0-only；第三方许可正文保持其自身的复制许可。
-- 用户明确授权的 steps 中 6 个自绘 STEP 采用 GPL-3.0-only；后续登记模板须明确记录作者、来源及许可。
+- 用户明确授权的 steps 自绘 STEP（初始六个及本轮新增四个）采用 GPL-3.0-only；后续登记模板须明确记录作者、来源及许可。
 - 基于这些 GPL 模板修改 / 生成的可版权 STEP / STL 模型保留模板许可，并附来源与可重建参数；项目原创法兰 / 试配设计同样按该许可提供。
 - 未由维护者拥有权利的第三方依赖、字体、图片和用户未来上传资产不自动换许可。steps 中的非 STEP 文件及 scadtest 始终按要求排除，不因这个许可声明变成公开资产。
 - 品牌名称与事实尺寸引用不是厂家授权，不复制来源图纸、照片、网页或 ISO 标准正文。
@@ -39,6 +39,6 @@ v0.1.0 每次几何下载提供 ZIP：
 
 ## English summary
 
-Original project content, the six user-authored initial STEP templates and their derivative designs use GPL-3.0-only. Third-party components and future user-uploaded assets retain their actual terms. The generator's license alone does not relicense every output.
+Original project content, the ten user-authored STEP templates (six initial plus four additions) and their derivative designs use GPL-3.0-only. Third-party components and future user-uploaded assets retain their actual terms. The generator's license alone does not relicense every output.
 
 ZIP downloads include geometry, reconstruction parameters, provenance and GPL text, plus the source STEP for lensboards. Formal distribution must address the preferred form for modification; excluded native files are not silently published, and STEP is not universally asserted to be complete corresponding source.
