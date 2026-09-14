@@ -1,6 +1,6 @@
 # 模板与参数规范草案
 
-状态：v0.1.0 已有内置模板注册和 schemaVersion=1 实现；下文为目标规范，元数据暂未全部实现，具体见 [实施状态](IMPLEMENTATION_STATUS.md)。尚未远端发布。
+状态：v0.1.0 已有内置模板注册和 schemaVersion=1，并以实验模板随 Pages 发布；下文为目标规范，元数据暂未全部实现，具体见 [实施状态](IMPLEMENTATION_STATUS.md)。
 
 ## 1. 模板来源
 

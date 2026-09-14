@@ -35,7 +35,7 @@ v0.1.0 每次几何下载提供 ZIP：
 
 应用采用 GPL 不抹去 MIT / LGPL / OCCT 例外等原有条款。锁定实际 JS / WASM 版本后逐项检查兼容性、通知和源文件义务，发布许可证文本与必要资源；不得将 Replicad 的 MIT 标签当作整个 CAD 内核许可。
 
-当前已安装并锁定依赖，构建附完整运行依赖通知；版本及 WASM 来源见 [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md)。尚未远端分发，不声称只添加根 LICENSE 就已完成所有发布义务。
+当前已安装、锁定并通过公开 Pages 分发浏览器依赖；构建附完整运行依赖通知，版本及 WASM 来源见 [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md)。网页与 ZIP 有对应构建提交的公开源码入口；不声称只添加根 LICENSE 就已完成所有发布义务。
 
 ## English summary
 

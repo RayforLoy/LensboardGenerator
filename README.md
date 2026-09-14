@@ -4,6 +4,8 @@
 
 实验性首版 v0.1.0。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；验证与未完成项见 [实施状态](docs/IMPLEMENTATION_STATUS.md)。
 
+在线使用：[Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/) · [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues)。
+
 ## 中文
 
 ### 功能
@@ -52,7 +54,7 @@ python scripts/verify-exports.py
 
 ### GitHub Pages
 
-已提供 CI、main 分支推送自动发布及手动 Pages 工作流。本次正在将已有公开仓库 RayforLoy/LensboardGenerator 设置为 GitHub Actions 静态发布。构建使用 Pages 的 base_path；最终公开网址与访问验证见实施状态。[GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
+已将公开仓库 RayforLoy/LensboardGenerator 配置为 GitHub Actions 静态 Pages，并设置仓库主页及 HTTPS。main 分支推送自动发布，也可手动运行 Deploy GitHub Pages。真实公开网址已验证：首页、六模板、Worker / WASM、暗色主题 / Report、STEP / STL 下载均通过；[部署记录](docs/DEPLOYMENT.md)。构建使用 Pages 的 base_path。[GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
 
 PowerShell 模拟仓库子路径（构建和预览保持同一变量）：
 
@@ -84,6 +86,6 @@ Experimental v0.1.0 static web app. All CAD runs locally in a Web Worker with Re
 
 Real solid STEP and checked binary STL download in a ZIP with JSON, GPL text and provenance; lensboard exports include the original template. Use Node.js 24 / pnpm 11.19.0: `pnpm install --frozen-lockfile`, then `pnpm dev` at http://127.0.0.1:5273/. Run pnpm build, pnpm test, pnpm test:cad and pnpm test:e2e. Browser tests default to installed Edge; TEST_BROWSER and TEST_URL override. requirements-dev.txt contains optional independent verification tools, never a backend.
 
-Manual Pages deployment is included, but remote deployment has not been performed. VITE_BASE_PATH supports repository subpaths; keep the same value for build and preview. Only STEP/STP assets from steps/ are bundled; scadtest/ and other source CAD formats remain ignored.
+Live site: [Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/), with [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues), light/dark themes and persisted preferences. GitHub Pages is configured for automatic main-branch and manual Actions deployment. Four browser scenarios passed against the real HTTPS site, including all templates and STEP/STL downloads; see the [deployment record](docs/DEPLOYMENT.md). VITE_BASE_PATH supports repository subpaths. Only STEP/STP assets are bundled; scadtest/ and other source CAD formats remain ignored.
 
 Read the [implementation status](docs/IMPLEMENTATION_STATUS.md) for evidence and unfinished PRD items. No physical fit, light-tightness, load capacity or standardized thread tolerance class is certified. Original code, initial templates and derivative models use [GPL-3.0-only](LICENSE); third-party terms remain separate.
