@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# No production Python dependencies: v0.1.0 runs entirely in the browser.
+# Build dependencies are in package.json and pnpm-lock.yaml.
+# Optional offline native STEP/STL checks use requirements-dev.txt.

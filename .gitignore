@@ -1,0 +1,37 @@
+# Private legacy reference assets: never publish or bundle automatically.
+/scadtest/
+
+# Initial template sources: only STEP/STP files may be tracked in steps.
+/steps/**
+!/steps/**/
+!/steps/**/*.[sS][tT][eE][pP]
+!/steps/**/*.[sS][tT][pP]
+
+# JavaScript dependencies and generated output
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.vite/
+*.tsbuildinfo
+
+# Optional local Python tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local configuration and editor/OS files
+.env
+.env.*
+!.env.example
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Private working models and generated exports (approved templates belong elsewhere)
+/local-models/
+/exports/
+/tmp/

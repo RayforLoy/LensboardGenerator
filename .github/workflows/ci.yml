@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Checks
+on:
+  pull_request:
+  push:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm test:cad
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/verify-exports.py
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Browser checks
+        env:
+          TEST_BROWSER: chromium
+        run: pnpm test:e2e

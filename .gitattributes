@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
+* text=auto eol=lf
+# STEP checksums identify the original bytes, not a line-ending-normalized copy.
+steps/** -text -diff
