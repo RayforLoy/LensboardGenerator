@@ -48,7 +48,7 @@ for record in reports:
     assert abs(mesh.volume - record['volume']) / record['volume'] <= 0.001, f'{name}: STL volume mismatch'
     mesh_bound_error = np.max(np.abs(mesh.bounds - np.array(record['bounds'])))
     assert mesh_bound_error <= 0.05, (name, mesh_bound_error)
-    assert len(mesh.split(only_watertight=False)) == record['solidCount'], f'{name}: unexpected STL fragments'
+    assert len(mesh.split(only_watertight=False, engine='networkx')) == record['solidCount'], f'{name}: unexpected STL fragments'
     # A threaded aperture is neither an ordinary major-diameter nor minor-diameter cylinder.
     # Sample at an intermediate radial depth: material alternates around the helix.
     if record['centralMode'] == 'thread':
