@@ -1,4 +1,18 @@
-# 首次公开部署记录
+# 公开部署记录
+
+## v0.2.4 — 2026-09-15
+
+按用户授权将已验证倒角及0.2.0–0.2.3本地增量合并提交并推送main；应用/参数版本为0.2.4/schema4，十个自绘STEP原字节保留。代码提交：[f048f7b](https://github.com/RayforLoy/LensboardGenerator/commit/f048f7b612f33af6e65768459007186612f0951c)。未改仓库可见性或创建其他仓库；保留已有Actions Pages、HTTPS和主页配置。
+
+- [Pages构建/部署](https://github.com/RayforLoy/LensboardGenerator/actions/runs/34878080345)已成功，构建设置/LensboardGenerator/子路径和对应源码SHA。
+- 本地26单元测试、严格生产构建、九项Edge浏览器与99组CAD及独立native OCCT/trimesh全部通过；源/构建/暂存十STEP SHA一致，无私有scadtest、非STEP资产或Downloads参数。
+- 真实公开HTTPS九项Edge/Playwright全部通过（约2.1分钟）：自动1.2P/手动/关闭/撤销/重载/双语/旧schema3迁移、倒角两格式ZIP下载，ALPA端面孔与真实M65、十模板逐一加载、凸凹/翻转/世界轴/主题/Report/打印优化/非法项目和过期导出回归。首页与实际JS资产HTTP200，资产版本0.2.4及对应源码SHA=f048f7b匹配。未用localhost替代远端访问。
+- [Linux Checks](https://github.com/RayforLoy/LensboardGenerator/actions/runs/34878080248)全部成功：26单元测试、严格构建、99组CAD导出/独立native STEP与STL重读及九项Chromium浏览器检查。此前只待远端确认的结果现已完成；非实物认证。
+- 后续仅更新验证文档的提交使用[skip ci]，不重建未改变的网页。发布资产的对应源码仍为实际构建的f048f7b，不改写来源为文档提交。
+
+以下v0.1.0是首次发布的历史记录。实机、打印试配、承重、遮光、Firefox/Safari和标准公差仍未验证。
+
+## v0.1.0 — 首次公开部署
 
 2026-09-14（UTC），实验性 v0.1.0。公开站点：[Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/)；[仓库](https://github.com/RayforLoy/LensboardGenerator)；[Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues)。
 
