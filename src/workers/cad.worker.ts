@@ -22,7 +22,7 @@ async function execute(request: Request) {
       initialization ??= initialize({ locateFile: () => wasmUrl }).then(oc => setOC(oc));
       await initialization;
       let blob: Blob | undefined;
-      if (request.project.kind === 'board') {
+      if (request.project.kind === 'board' && request.project.boardSource === 'template') {
         const template = request.template;
         if (!template) throw new GeometryError('template');
         blob = sourceCache.get(template.id);

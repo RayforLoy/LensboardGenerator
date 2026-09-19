@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { initCad } from './init-cad.ts';
-import { defaultProject as appDefaults, threadChamferSize } from '../src/domain/project.ts';
+import { actualDiameter, defaultProject as appDefaults, roundedRectangleArea, threadChamferSize } from '../src/domain/project.ts';
 import { buildModel, isValid, threadGroove, threadDimensions, boundsOf } from '../src/geometry/model.ts';
 import { importSTEP, measureVolume, makeBox, makeCompound } from 'replicad';
 import assert from 'node:assert/strict';
@@ -17,11 +17,11 @@ async function record(name: string, model: Awaited<ReturnType<typeof buildModel>
   const step = model.shape.blobSTEP(), stl = model.shape.blobSTL({ binary: true, tolerance: 0.03, angularTolerance: 0.1 });
   writeFileSync(`tmp/cad-check/${name}.step`, Buffer.from(await step.arrayBuffer()));
   writeFileSync(`tmp/cad-check/${name}.stl`, Buffer.from(cleanBinarySTL(await stl.arrayBuffer())));
-  reports.push(structuredClone({ name, generatorVersion: p.generatorVersion, volume: model.volume, bounds: model.bounds, apertureSurfaces: model.apertureSurfaces, aperturePosition: [p.central.x, p.central.y], solidCount: model.solidCount, localThickness: model.localThickness, centralMode: p.central.mode, diameter: p.central.diameter, print: p.central.print, thread: p.central.thread, relief: p.relief, orientation: p.orientation, ...evidence, stepBytes: step.size, stlBytes: stl.size }));
+  reports.push(structuredClone({ name, generatorVersion: p.generatorVersion, volume: model.volume, bounds: model.bounds, apertureSurfaces: model.apertureSurfaces, aperturePosition: [p.central.x, p.central.y], solidCount: model.solidCount, localThickness: model.localThickness, centralMode: p.central.mode, diameter: p.central.diameter, print: p.central.print, thread: p.central.thread, relief: p.relief, orientation: p.orientation, boardSource: p.boardSource, customBoard: p.customBoard, ...evidence, stepBytes: step.size, stlBytes: stl.size }));
 }
 for (const file of readdirSync('steps').filter(n => /\.(step|stp)$/i.test(n))) {
   const p = defaultProject();
-  const template = { id: file.startsWith('Graflex') ? 'graflex-test' : file, file, rotationX: 90, editableRadius: 54 } as Template;
+  const template = { id: file, file, rotationX: 90, editableRadius: 54, sourceShiftX: file === 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP' ? -150 : 0 } as Template;
   const source = new Blob([readFileSync(`steps/${file}`)]);
   const model = await buildModel(p, template, source);
   assert.ok(isValid(model.shape));
@@ -133,10 +133,12 @@ const datums: Record<string, [number, number, number]> = {
   'Horseman_Lensboard_blank.STEP': [7.6, 5.8, 7.6], 'Horseman_Lensboard_simplified_blank.STEP': [7.6, 5.8, 7.6],
   'Linhof_Lensboard_blank.STEP': [4.45, 1.95, 4.45], 'Sinar_Lensboard_blank.STEP': [5.15, 0, 3.15],
   'Sinar_Lensboard_simplified_blank.STEP': [5, 0, 3.15], 'TOYO158_Lensboard_simplified_blank.STEP': [6.5, 0, 2.5],
+  'Graflex_pre_anniversary_4x5_lensboard_blank.STEP': [6.5, 0, 6.5],
+  'Linhof_technika_iii_iv_6x9_lensboard_blank.STEP': [2, 0, 2],
 };
 for (const [file, [height, lo, hi]] of Object.entries(datums)) {
   const source = new Blob([readFileSync(`steps/${file}`)]);
-  const template = { id: file.startsWith('Graflex') ? 'graflex-test' : file, rotationX: 90, editableRadius: 26 } as Template;
+  const template = { id: file, rotationX: 90, editableRadius: 26, sourceShiftX: file === 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP' ? -150 : 0 } as Template;
   for (const [frontBack, upDown] of [[true, false], [false, true], [true, true]]) {
     const p = defaultProject(); p.orientation = { frontBack, upDown }; p.central.diameter = 10; p.central.x = 7; p.central.y = -5;
     const m = await buildModel(p, template, source);
@@ -151,7 +153,7 @@ for (const [file, width, editableRadius] of [
   ['CAMBO TWR54_Lensboard_simplified_blank.STEP', 52, 26], ['Linhof_Lensboard_blank.STEP', 56, 35],
 ] as const) for (const frontBack of [false, true]) {
   const p = defaultProject(); p.relief.enabled = true; p.relief.width = p.relief.height = width; p.orientation.frontBack = frontBack;
-  const template = { id: file.startsWith('Graflex') ? 'graflex-test' : file, rotationX: 90, editableRadius } as Template;
+  const template = { id: file, rotationX: 90, editableRadius, sourceShiftX: file === 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP' ? -150 : 0 } as Template;
   const m = await buildModel(p, template, new Blob([readFileSync(`steps/${file}`)]));
   const [height, lo, hi] = datums[file], expectedBase = frontBack ? height - lo : hi;
   assert.ok(Math.abs(m.apertureSurfaces![1] - expectedBase - 17) < 1e-5);
@@ -248,5 +250,49 @@ await assert.rejects(() => buildModel(depleted), /chamfer/);
 const crossedChamfer = alpaCap(); crossedChamfer.central.mode = 'thread'; crossedChamfer.central.thread.confirmed = true;
 crossedChamfer.central.thread.chamfer.enabled = true; crossedChamfer.relief.width = crossedChamfer.relief.height = 72.4;
 await assert.rejects(() => buildModel(crossedChamfer, alpaTemplate, alpaBlob), /reliefAperture/);
+// Parametric custom boards: exact outer profiles, additive rear light traps, and machining.
+for (const sample of [
+  { name: 'rectangle', width: 100, height: 80, radius: 0, outer: false, inner: false },
+  { name: 'rounded-outer', width: 100, height: 80, radius: 10, outer: true, inner: false },
+  { name: 'racetrack-inner', width: 120, height: 80, radius: 40, outer: false, inner: true },
+  { name: 'circle-both', width: 80, height: 80, radius: 40, outer: true, inner: true },
+] as const) {
+  const p = appDefaults(); p.boardSource = 'custom'; p.customBoard.width = sample.width; p.customBoard.height = sample.height; p.customBoard.radius = sample.radius;
+  p.customBoard.outerLightTrap.enabled = sample.outer; p.customBoard.innerLightTrap.enabled = sample.inner;
+  if (sample.name === 'circle-both') { p.customBoard.innerLightTrap.width = 50; p.customBoard.innerLightTrap.height = 50; p.customBoard.innerLightTrap.radius = 8; }
+  const m = await buildModel(p), b = p.customBoard, opening = Math.PI * (actualDiameter(p) / 2) ** 2;
+  let expected = roundedRectangleArea(b.width, b.height, b.radius) * b.thickness - opening * b.thickness;
+  if (sample.outer) expected += (roundedRectangleArea(b.width, b.height, b.radius) - roundedRectangleArea(b.width - 2 * b.outerLightTrap.width, b.height - 2 * b.outerLightTrap.width, Math.max(0, b.radius - b.outerLightTrap.width))) * b.outerLightTrap.height;
+  if (sample.inner) expected += (roundedRectangleArea(b.innerLightTrap.width, b.innerLightTrap.height, b.innerLightTrap.radius) - opening) * b.innerLightTrap.heightMm;
+  assert.ok(Math.abs(m.volume - expected) < 0.03, `${sample.name}: custom volume ${m.volume} vs ${expected}`);
+  assert.deepEqual(m.bounds.map(v => v.map(x => Math.round(x * 1e6) / 1e6)), [[-sample.width / 2, -sample.height / 2, sample.outer || sample.inner ? -2 : 0], [sample.width / 2, sample.height / 2, 3]]);
+  const materialSamples: [number, number, number, boolean][] = [[sample.width / 2 + 1, 0, 1, false], [sample.width / 2 - 2, 0, 1, true]];
+  if (sample.outer) materialSamples.push([sample.width / 2 - 1.5, 0, -1, true]);
+  if (sample.inner) materialSamples.push([20, 0, -1, true]);
+  if (sample.outer && sample.inner) materialSamples.push([33.5, 0, -1, false]);
+  await record(`custom-${sample.name}`, m, p, { materialSamples, expectedCustomVolume: expected }); m.shape.delete();
+}
+const customThread = appDefaults(); customThread.boardSource = 'custom'; customThread.customBoard.thickness = 5;
+customThread.central.mode = 'thread'; customThread.central.thread.confirmed = true; customThread.central.thread.diameter = 40; customThread.central.thread.length = 3;
+const customThreadModel = await buildModel(customThread); await record('custom-thread-M40x1', customThreadModel, customThread); customThreadModel.shape.delete();
+for (const spacing of [17, -17]) {
+  const p = appDefaults(); p.boardSource = 'custom';
+  p.customBoard = { width: 120, height: 100, thickness: 3, radius: 10,
+    outerLightTrap: { enabled: true, width: 3, height: 2 },
+    innerLightTrap: { enabled: true, width: 80, height: 80, radius: 8, heightMm: 2 } };
+  p.relief = { ...p.relief, enabled: true, width: 60, height: 60, radius: 8, angle: 90, spacing };
+  const m = await buildModel(p); assert.ok(isValid(m.shape)); assert.equal(m.solidCount, 1);
+  assert.ok(Math.abs(m.localThickness - 2.5) < 1e-5);
+  m.apertureSurfaces!.forEach((v, i) => assert.ok(Math.abs(v - [3 + spacing - 2.5, 3 + spacing][i]) < 1e-5));
+  await record(`custom-relief-both-${spacing > 0 ? 'raised' : 'recessed'}`, m, p, { expectedBase: 3, baseLo: -2 }); m.shape.delete();
+}
+const customReliefSkipInner = appDefaults(); customReliefSkipInner.boardSource = 'custom'; customReliefSkipInner.customBoard.width = 120;
+customReliefSkipInner.customBoard.outerLightTrap.enabled = true; customReliefSkipInner.relief.enabled = true; customReliefSkipInner.relief.angle = 90;
+const customReliefSkipModel = await buildModel(customReliefSkipInner);
+await record('custom-relief-skip-inner', customReliefSkipModel, customReliefSkipInner, { expectedBase: 3, baseLo: -2 }); customReliefSkipModel.shape.delete();
+const customReliefEqual = appDefaults(); customReliefEqual.boardSource = 'custom'; customReliefEqual.customBoard.innerLightTrap = { enabled: true, width: 60, height: 60, radius: 8, heightMm: 2 };
+customReliefEqual.relief = { ...customReliefEqual.relief, enabled: true, width: 60, height: 60, radius: 8, angle: 90 };
+const customReliefEqualModel = await buildModel(customReliefEqual); assert.ok(isValid(customReliefEqualModel.shape));
+await record('custom-relief-equal-inner', customReliefEqualModel, customReliefEqual, { expectedBase: 3, baseLo: -2 }); customReliefEqualModel.shape.delete();
 writeFileSync('tmp/cad-check/report.json', JSON.stringify(reports, null, 2));
 console.log(`PASS: ${reports.length} export regression samples written to tmp/cad-check.`);

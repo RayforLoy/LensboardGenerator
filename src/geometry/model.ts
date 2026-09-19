@@ -33,6 +33,34 @@ function cylinder(radius: number, z0: number, z1: number, x = 0, y = 0) {
 function fuse(body: Shape3D, tool: Shape3D): Shape3D {
   try { const result = body.fuse(tool); body.delete(); return result; } finally { tool.delete(); }
 }
+function roundedProfile(width: number, height: number, radius: number, z: number): Sketch {
+  const drawing = Math.abs(width - height) < 1e-8 && Math.abs(radius - width / 2) < 1e-8
+    ? drawCircle(width / 2) : drawRoundedRectangle(width, height, radius);
+  return drawing.sketchOnPlane('XY', z) as Sketch;
+}
+function roundedPrism(width: number, height: number, radius: number, z0: number, z1: number): Shape3D {
+  const sketch = roundedProfile(width, height, radius, z0);
+  try { return sketch.extrude(z1 - z0); } finally { sketch.delete(); }
+}
+function customBoardBody(p: Project): Shape3D {
+  const b = p.customBoard, overlap = 0.01;
+  let result = roundedPrism(b.width, b.height, b.radius, 0, b.thickness);
+  try {
+    if (b.outerLightTrap.enabled) {
+      const trap = b.outerLightTrap;
+      let ring = roundedPrism(b.width, b.height, b.radius, -trap.height, overlap);
+      ring = cut(ring, roundedPrism(b.width - 2 * trap.width, b.height - 2 * trap.width,
+        Math.max(0, b.radius - trap.width), -trap.height - overlap, 2 * overlap));
+      result = fuse(result, ring);
+    }
+    if (b.innerLightTrap.enabled) {
+      const trap = b.innerLightTrap;
+      result = fuse(result, roundedPrism(trap.width, trap.height, trap.radius, -trap.heightMm, overlap));
+    }
+    if (!isValid(result) || solidCount(result) !== 1) throw new GeometryError('invalidSolid', 'customBoard');
+    return result;
+  } catch (error) { result.delete(); throw error; }
+}
 function reliefProfile(r: Project['relief'], inset: number, z: number): Sketch {
   const dims = reliefDimensions(r);
   const drawing = r.shape === 'circle' ? drawCircle(dims.width / 2 - inset)
@@ -162,13 +190,16 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
   const warnings: Issue[] = [{ code: 'experimental', warning: true }];
   let reliefFront: number | undefined;
   try {
-    if (p.kind === 'board') {
+    if (p.kind === 'board' && p.boardSource === 'custom') {
+      body = customBoardBody(p);
+      if (p.customBoard.outerLightTrap.enabled || p.customBoard.innerLightTrap.enabled) warnings.push({ code: 'lightTrapUnchecked', feature: 'customBoard', warning: true });
+    } else if (p.kind === 'board') {
       if (!template || !blob) throw new GeometryError('template');
       const raw = await importSTEP(blob);
       if (!isValid(raw)) { raw.delete(); throw new GeometryError('invalidSolid'); }
       const source = boundsOf(raw);
       const rotated = raw.rotate(template.rotationX, [0, 0, 0], [1, 0, 0]); raw.delete();
-      const normalized = rotated.translate(template.id.startsWith('graflex') ? -150 : 0, 0, -source[0][1]); rotated.delete();
+      const normalized = rotated.translate(template.sourceShiftX ?? 0, 0, -source[0][1]); rotated.delete();
       const solids = normalized.solids;
       normalized.delete();
       solids.sort((a, b) => measureVolume(b) - measureVolume(a));
@@ -193,7 +224,7 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
         const combined = body.fuse(step); body.delete(); step.delete(); body = combined;
       }
     }
-    if (p.relief.enabled && template) {
+    if (p.relief.enabled && p.kind === 'board') {
       reliefFront = localSurfaces(body, 0, 0)[1] + p.relief.spacing;
       const original = body; body = undefined;
       body = applyRelief(original, p, extras);

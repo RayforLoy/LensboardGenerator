@@ -2,7 +2,7 @@
 
 大画幅镜头板 / 法兰生成器 · Large-format lensboard & flange generator
 
-实验性 v0.2.4，已推送GitHub并发布Pages，公开HTTPS九项浏览器验证通过。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；见 [更新日志](CHANGELOG.md) 与 [实施状态](docs/IMPLEMENTATION_STATUS.md)。
+实验性 v0.3.0 本地开发版，已完成自动验证但尚未提交、推送或发布；在线站点仍为 v0.2.4。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；见 [更新日志](CHANGELOG.md) 与 [实施状态](docs/IMPLEMENTATION_STATUS.md)。
 
 在线使用：[Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/) · [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues)。
 
@@ -10,7 +10,8 @@
 
 ### 功能
 
-- 十个自绘 STEP 模板：Sinar、Horseman、Linhof、Graflex、ALPA、Arca 141、CAMBO TWR54、TOYO 158，保留完整 / 简化版本；Horseman 完整版的附属实体保留输出。
+- 十二个自绘 STEP 模板：Sinar、Horseman、Linhof、Graflex、ALPA、Arca 141、CAMBO TWR54、TOYO 158，新增 Graflex Pre-Anniversary 4×5 与 Linhof Technika III/IV 6×9；保留完整 / 简化版本，Horseman 完整版的附属实体保留输出。
+- 自定义镜头板：通过长、宽、厚度、圆角半径生成解析 B-rep；R=0 是矩形，R=半短边是跑道形，等边时为圆形。可在背面生成向内等距的外圈遮光环和指定尺寸的内圈圆角矩形遮光台，均向 −Z 凸出；并可继续叠加凸板/凹板。完整轮廓须满足凸凹板≤内圈≤外圈内边界≤外形，关闭层跳过、等轮廓允许。
 - 模板前后翻转（绕 Y 轴 180°）/ 上下翻转（绕 Z 轴 180°），附件一起旋转；先翻转再按最终 XY 坐标加工，+Z 始终正面，STEP / STL / 参数同步。预览显示世界原点的三色坐标轴、箭头及 XYZ。切换模板清除翻转。
 - 凸凹基座按用户选择仅比较主板 X / Y 外尺寸范围，取消基座厚度均匀 / 材料完整校验和额外 1.5 mm 余量；允许等于范围，超过任一侧报错。跨筋位 / 台阶不因此阻断，但可能切除安装 / 遮光结构，需人工检查；真实附件干涉与有效实体检查仍保留。Linhof / CAMBO 默认 60×60 mm 凸凹已可生成，非装机认证。
 - 凸板 / 凹板（默认关闭）：圆角矩形 / 圆形基座；壁厚默认 2 mm（向内、法向厚度），端面厚 2.5 mm，倾角 80°（90° 为直壁），间距 +17 mm。间距定义为原正面到新端面正面，负值为凹；两方向朝端面收窄，基座固定模板中心。小模板需减小基座；后侧干涉 / 遮光 / 承重需实物确认。
@@ -25,9 +26,9 @@
 - 首次默认中文，可切换 English，参数不丢失；保护区、当地厚度、孔交叠、实体及 STL 闭合检查，过期模型禁止导出。
 - 亮色 / 深蓝暗色主题（首次默认暗色，保留手动记忆），不影响 CAD；真实拓扑边默认显示且可关闭，不显示三角网格线；顶栏 Report 打开本项目 GitHub Issues，不自动上传设计。
 
-下载为 ZIP：含 STEP 或 STL、项目 JSON、GPL v3 文本、来源说明；镜头板另含原始 STEP 模板。STEP 保留实体几何而非应用参数树，继续编辑请保留 JSON。模型与参数不上传服务器；尚无离线 PWA。
+下载为 ZIP：含 STEP 或 STL、项目 JSON、GPL v3 文本、来源说明；内置模板模式另含原始 STEP，自定义板则附 CUSTOM-BOARD 参数说明且不打包闲置模板。STEP 保留实体几何而非应用参数树，继续编辑请保留 JSON。模型与参数不上传服务器；尚无离线 PWA。
 
-项目 JSON 版本 4；完整的旧版本 1 / 2 / 3 严格迁移并保持倒角关闭，避免旧几何改变；1 / 2 保持未翻转，1保持凸凹关闭，原有加工参数不变。自动/手动倒角值独立保存；未知版本 / 损坏文件不覆盖当前设计。STL 模板导入仍未实现，未来 STL 来源默认关闭边线。
+项目 JSON 版本 5；完整的旧版本 1 / 2 / 3 / 4 严格迁移，旧项目保持模板模式，旧版倒角关闭规则不变，避免旧几何改变；1 / 2 保持未翻转，1保持凸凹关闭，原有加工参数不变。自动/手动倒角值独立保存；未知版本 / 损坏文件不覆盖当前设计。STL 模板导入仍未实现，未来 STL 来源默认关闭边线。
 
 ### 启动与测试
 
@@ -85,15 +86,15 @@ scadtest/ 整体忽略且不打包；steps/ 仅 STEP/STP 白名单纳入 Git、�
 
 ### 许可
 
-原创代码、十个用户自绘 STEP 及衍生模型采用 [GPL-3.0-only](LICENSE)，第三方依赖保留原许可。构建附 GPL 文本、[第三方通知](THIRD_PARTY_NOTICES.md) 和依赖许可正文；公开分发需同时提供可修改源码、锁文件、构建说明及 WASM 对应源构建来源，见 [许可范围](docs/LICENSING.md)。
+原创代码、十二个用户自绘 STEP、自定义参数化板及衍生模型采用 [GPL-3.0-only](LICENSE)，第三方依赖保留原许可。构建附 GPL 文本、[第三方通知](THIRD_PARTY_NOTICES.md) 和依赖许可正文；公开分发需同时提供可修改源码、锁文件、构建说明及 WASM 对应源构建来源，见 [许可范围](docs/LICENSING.md)。
 
 ## English
 
-v0.2.4 adds optional front +Z thread lead-in chamfers, enabled for new designs with automatic C=1.2×pitch and fixed45°. C is axial depth/radial growth from the minor or tap-drill bore; custom size and off modes retain their settings. Nominal thread diameter/pitch stay unchanged. Machining length includes the lead-in, leaving approximately length−C of full profile; local breakthrough and depleted threads are blocked. ZIP filenames/provenance and actual STEP/STL include the chamfer. Schema4 strictly migrates complete schema1/2/3 with chamfers off to preserve old geometry. Publication and automated evidence: [implementation status](docs/IMPLEMENTATION_STATUS.md), [deployment record](docs/DEPLOYMENT.md).
+Local experimental v0.3.0 adds a parametric custom-lensboard source with length, width, thickness and corner radius. R=0 is a rectangle; R at half the shorter side is a racetrack, or a circle for equal sides. Optional rear outer light-trap rings and centered rounded-rectangle bosses project toward −Z; raised/recessed boards can be stacked when full outlines satisfy relief ≤ inner boss ≤ outer-ring opening ≤ board. Disabled layers are skipped and equal outlines are allowed. Custom exports omit unrelated STEP templates. Schema5 strictly migrates complete schema1–4 projects into template mode without changing old geometry. This version has been verified locally but is not yet committed, pushed or deployed; the public site remains v0.2.4.
 
-Experimental v0.2.4. CAD runs locally in a Web Worker with Replicad/OpenCascade WASM. Ten user-authored STEP templates, procedural flanges, sourced shutter apertures, optional +0.5 mm diameter printing allowance, actual metric threads and composite machining holes. Hollow raised/recessed boards support rounded rectangles/circles, inward normal walls (2 mm), end faces (2.5 mm), 80° taper and signed +17 mm spacing. Templates/accessories rotate together before final-coordinate machining; preview includes world axes and optional topology edges, with dark navy/cyan defaults. Relief bases use primary-board X/Y bounds only, without the disabled uniform-stock/extra-margin gate. End-face apertures use their new inner cavity; original-stock holes retain template protection. Accessory interference, local-hole material and valid-solid checks remain. Simplified Chinese is default; language and view preferences persist independently. Inspect mounting/light-sealing geometry and test physical fit.
+CAD runs locally in a Web Worker with Replicad/OpenCascade WASM. Twelve user-authored STEP templates, procedural custom boards and flanges, sourced shutter apertures, optional +0.5 mm diameter printing allowance, actual metric threads and composite machining holes are available. Hollow raised/recessed template boards remain supported separately. Templates/accessories rotate together before final-coordinate machining; preview includes world axes and optional topology edges, with dark navy/cyan defaults. Accessory interference, local-hole material and valid-solid checks remain. Simplified Chinese is default; language and view preferences persist independently. Inspect mounting/light-sealing geometry and test physical fit.
 
-Real solid STEP and checked binary STL download in a ZIP with JSON, GPL text and provenance; lensboard exports include the original template. Use Node.js 24 / pnpm 11.19.0: `pnpm install --frozen-lockfile`, then `pnpm dev` at http://127.0.0.1:5273/. Run pnpm build, pnpm test, pnpm test:cad and pnpm test:e2e. Browser tests default to installed Edge; TEST_BROWSER and TEST_URL override. requirements-dev.txt contains optional independent verification tools, never a backend.
+Real solid STEP and checked binary STL download in a ZIP with JSON, GPL text and provenance; built-in-template exports include the original template, while custom boards include a parameter note. Use Node.js 24 / pnpm 11.19.0: `pnpm install --frozen-lockfile`, then `pnpm dev` at http://127.0.0.1:5273/. Run pnpm build, pnpm test, pnpm test:cad and pnpm test:e2e. Browser tests default to installed Edge; TEST_BROWSER and TEST_URL override. requirements-dev.txt contains optional independent verification tools, never a backend.
 
 Live site: [Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/), with [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues), light/dark themes and persisted preferences. GitHub Pages is configured for automatic main-branch and manual Actions deployment. Nine browser scenarios passed against the real v0.2.4 HTTPS site, including ten templates, chamfers and STEP/STL downloads; see the [deployment record](docs/DEPLOYMENT.md). VITE_BASE_PATH supports repository subpaths. Only STEP/STP assets are bundled; scadtest/ and other source CAD formats remain ignored.
 

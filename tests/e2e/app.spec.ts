@@ -34,7 +34,7 @@ test('thread chamfer follows pitch, preserves custom values, roundtrips exports 
     const file = await pending; expect(file.suggestedFilename()).toContain('C0.50-45deg');
     const zip = unzipSync(readFileSync((await file.path())!));
     const p = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
-    expect(p.schemaVersion).toBe(4); expect(p.central.thread.chamfer).toEqual({ enabled: true, mode: 'custom', sizeMm: 0.5 });
+    expect(p.schemaVersion).toBe(5); expect(p.central.thread.chamfer).toEqual({ enabled: true, mode: 'custom', sizeMm: 0.5 });
     expect(strFromU8(zip['THREAD-ENTRY.txt'])).toContain('fixed 45 degrees');
     expect(Object.keys(zip).some(n => n.endsWith(`.${format}`))).toBe(true);
   }
@@ -42,7 +42,7 @@ test('thread chamfer follows pitch, preserves custom values, roundtrips exports 
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('lensboard-project-v1')!));
   await page.getByLabel('Chamfer C (depth / radial increase)', { exact: true }).fill('2.5');
   await expect(page.getByRole('alert')).toContainText('C below the thread'); await expect(page.getByTestId('export-step')).toBeDisabled();
-  const old = structuredClone(before); old.schemaVersion = 3; delete old.central.thread.chamfer;
+  const old = structuredClone(before); old.schemaVersion = 3; delete old.central.thread.chamfer; delete old.boardSource; delete old.customBoard;
   page.once('dialog', dialog => dialog.accept());
   await page.locator('input[type=file]').setInputFiles({ name: 'legacy-v3.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(old)) });
   await expect(page.getByTestId('thread-chamfer')).not.toBeChecked();
@@ -67,7 +67,7 @@ test('ALPA cap hole60 and M65 use end-face protection after JSON import and expo
     const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
     const file = await pending, zip = unzipSync(readFileSync((await file.path())!));
     const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
-    expect(json.central.mode).toBe(mode); expect(json.generatorVersion).toBe('0.2.4');
+    expect(json.central.mode).toBe(mode); expect(json.generatorVersion).toBe('0.3.0');
     expect(json.relief.width).toBe(80); expect(Object.keys(zip).some(n => n.endsWith('.step'))).toBe(true);
   }
   // Turning relief off must NOT exempt a 60 mm hole in the original ALPA board.
@@ -115,7 +115,7 @@ test('template flips rebuild exports, preserve final coordinates, undo, reset an
   const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
   const downloaded = await pending, zip = unzipSync(readFileSync((await downloaded.path())!));
   const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
-  expect(json.orientation).toEqual(stored.orientation); expect(json.schemaVersion).toBe(4);
+  expect(json.orientation).toEqual(stored.orientation); expect(json.schemaVersion).toBe(5);
   await page.getByRole('button', { name: '↶ 撤销', exact: true }).click();
   await expect(page.getByTestId('template-front-back')).toBeChecked(); await expect(page.getByTestId('template-up-down')).not.toBeChecked();
   await page.getByRole('button', { name: '↷ 重做', exact: true }).click(); await expect(page.getByTestId('template-up-down')).toBeChecked();
@@ -161,7 +161,7 @@ test('relief controls, end-face machining, edges and schema 1 migration', async 
   const file = await event; const path = testInfo.outputPath('relief-step.zip'); await file.saveAs(path);
   expect(file.suggestedFilename()).toContain('recessed-17mm');
   const zip = unzipSync(readFileSync(path)), json = JSON.parse(strFromU8(zip[Object.keys(zip).find(k => k.endsWith('.json'))!]));
-  expect(json.schemaVersion).toBe(4); expect(json.generatorVersion).toBe('0.2.4');
+  expect(json.schemaVersion).toBe(5); expect(json.generatorVersion).toBe('0.3.0');
   expect(json.relief).toMatchObject({ enabled: true, spacing: -17, shape: 'circle', angle: 90 });
   await page.getByLabel('名义孔径', { exact: true }).fill('54');
   await expect(page.getByRole('alert')).toContainText('超出端面内腔');
@@ -171,13 +171,13 @@ test('relief controls, end-face machining, edges and schema 1 migration', async 
   await page.getByLabel('间距（+凸 / −凹）').fill('0');
   await expect(page.getByRole('alert')).toContainText('凸 / 凹板尺寸无效');
   await expect(page.getByTestId('export-step')).toBeDisabled();
-  const legacy = JSON.parse(before!); delete legacy.relief; delete legacy.orientation; delete legacy.central.thread.chamfer; legacy.schemaVersion = 1; legacy.generatorVersion = '0.1.0';
+  const legacy = JSON.parse(before!); delete legacy.relief; delete legacy.orientation; delete legacy.central.thread.chamfer; delete legacy.boardSource; delete legacy.customBoard; legacy.schemaVersion = 1; legacy.generatorVersion = '0.1.0';
   page.once('dialog', dialog => dialog.accept());
   await page.locator('input[type=file]').setInputFiles({ name: 'legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(legacy)) });
   await expect(page.getByTestId('relief-enabled')).not.toBeChecked();
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('lensboard-project-v1')!));
-  expect(stored.schemaVersion).toBe(4); expect(stored.central.diameter).toBe(34.6); expect(stored.central.thread.chamfer.enabled).toBe(false);
+  expect(stored.schemaVersion).toBe(5); expect(stored.boardSource).toBe('template'); expect(stored.central.diameter).toBe(34.6); expect(stored.central.thread.chamfer.enabled).toBe(false);
   await page.getByRole('button', { name: 'EN', exact: true }).click();
   await expect(page.getByTestId('relief-enabled')).toHaveAccessibleName('Enable raised / recessed board');
   expect(errors).toEqual([]);
@@ -270,12 +270,46 @@ test('validation blocks stale exports; edits and undo remain usable', async ({ p
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
 });
 
-test('all ten templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
+test('custom lensboard profiles and rear light traps export without an unrelated source template', async ({ page }, testInfo) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('./'); await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
+  await page.getByTestId('board-source-custom').click();
+  await expect(page.getByTestId('custom-board-fields')).toBeVisible();
+  await expect(page.getByText('当前外形: 圆角矩形')).toBeVisible();
+  await page.getByLabel('镜头板长度', { exact: true }).fill('120');
+  await page.getByLabel('镜头板宽度', { exact: true }).fill('80');
+  await page.getByLabel('外轮廓圆角半径', { exact: true }).fill('40');
+  await expect(page.getByText('当前外形: 跑道形')).toBeVisible();
+  await page.getByTestId('outer-light-trap').check(); await page.getByTestId('inner-light-trap').check();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await expect(page.locator('.metrics-panel')).toContainText('5.00 mm');
+  await page.getByLabel('内圈凸台长度', { exact: true }).fill('112');
+  await expect(page.getByRole('alert')).toContainText('轮廓范围须满足'); await expect(page.getByTestId('export-step')).toBeDisabled();
+  await page.getByLabel('内圈凸台长度', { exact: true }).fill('60');
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await page.locator('.relief-panel summary').click(); await page.getByTestId('relief-enabled').check();
+  await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
+  await expect(page.locator('.metrics-panel')).toContainText('2.50 mm');
+  await page.getByTestId('accept-warnings').check();
+  const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
+  const file = await pending, zip = unzipSync(readFileSync((await file.path())!));
+  expect(file.suggestedFilename()).toContain('custom-board-120x80x3-R40');
+  expect(Object.keys(zip).some(name => name.startsWith('source-template/'))).toBe(false);
+  expect(strFromU8(zip['CUSTOM-BOARD.txt'])).toContain('Rear outer light-trap ring: width 3 mm, height 2 mm');
+  const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(k => k.endsWith('.json'))!]));
+  expect(json).toMatchObject({ schemaVersion: 5, boardSource: 'custom', relief: { enabled: true }, customBoard: { width: 120, height: 80, thickness: 3, radius: 40, outerLightTrap: { enabled: true }, innerLightTrap: { enabled: true } } });
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  await expect(page.getByText('Current outline: Racetrack')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('custom-racetrack-light-traps.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('all twelve templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
   await page.goto('./');
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
   const templates = page.getByRole('combobox', { name: '镜头板模板', exact: true });
-  await expect(templates.locator('option')).toHaveCount(10);
-  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'graflex-pacemaker45-simplified-blank', 'sinar-simplified-blank', 'alpa-blank', 'arca141-blank', 'cambo-twr54-simplified-blank', 'toyo158-simplified-blank', 'sinar-blank']) {
+  await expect(templates.locator('option')).toHaveCount(12);
+  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'linhof-technika-iii-iv-69-blank', 'graflex-pacemaker45-simplified-blank', 'graflex-pre-anniversary-45-blank', 'sinar-simplified-blank', 'alpa-blank', 'arca141-blank', 'cambo-twr54-simplified-blank', 'toyo158-simplified-blank', 'sinar-blank']) {
     await templates.selectOption(id);
     await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
     await expect(page.getByRole('alert')).toHaveCount(0);

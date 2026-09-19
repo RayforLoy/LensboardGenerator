@@ -44,7 +44,7 @@ export function useCad(project: Project, onExport: (format: 'step' | 'stl', byte
     if (issues.length) { clearTimeouts(); return; }
     setState('building');
     const timer = setTimeout(() => {
-      ensureWorker().postMessage({ type: 'build', project: structuredClone(project), template: templateById(project.templateId), revision } satisfies Request);
+      ensureWorker().postMessage({ type: 'build', project: structuredClone(project), template: project.kind === 'board' && project.boardSource === 'template' ? templateById(project.templateId) : undefined, revision } satisfies Request);
       armTimeout();
     }, 350);
     return () => clearTimeout(timer);

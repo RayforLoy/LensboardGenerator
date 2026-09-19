@@ -7,7 +7,7 @@ await initCad();
 for (const file of readdirSync('steps').filter(n => /\.(step|stp)$/i.test(n))) {
   const shape = await importSTEP(new Blob([readFileSync(`steps/${file}`)]));
   const originBounds = shape.boundingBox.bounds;
-  let normalized = shape.rotate(90, [0,0,0], [1,0,0]).translate(file.startsWith('Graflex') ? -150 : 0, 0, -originBounds[0][1]);
+  let normalized = shape.rotate(90, [0,0,0], [1,0,0]).translate(file === 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP' ? -150 : 0, 0, -originBounds[0][1]);
   const solids = normalized.solids;
   console.log(JSON.stringify({ file, bounds: normalized.boundingBox.bounds, volume: measureVolume(normalized.asShape3D()), solids: solids.map(s => ({ bounds: s.boundingBox.bounds, volume: measureVolume(s) })) }));
   const tool = makeCylinder(0.5, 50, [0,0,-10]);

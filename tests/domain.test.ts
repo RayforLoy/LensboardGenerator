@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 import { describe, it, expect } from 'vitest';
-import { actualDiameter, countersinkDepth, defaultProject, parseProject, patternHoles, validate, presets, configId, reliefDimensions, reliefApertureFits, reliefWithinBoard, APP_VERSION, threadChamferSize, threadBoreRadius, threadEnvelopeRadius } from '../src/domain/project';
+import { actualDiameter, countersinkDepth, customBoardShape, defaultProject, parseProject, patternHoles, validate, presets, configId, reliefDimensions, reliefApertureFits, reliefWithinBoard, roundedRectangleArea, roundedRectangleContains, APP_VERSION, threadChamferSize, threadBoreRadius, threadEnvelopeRadius } from '../src/domain/project';
 import { en, zh } from '../src/i18n';
 import { threadDimensions } from '../src/geometry/model';
 
@@ -67,8 +67,9 @@ describe('thread lead-in chamfer', () => {
   });
   it('strictly migrates schema 3 with chamfer off and retains all older machining data', () => {
     const p = defaultProject(); p.central.mode = 'thread'; p.central.thread.confirmed = true; p.orientation.frontBack = true;
-    const { chamfer, ...thread } = p.central.thread;
-    const old = { ...p, schemaVersion: 3, central: { ...p.central, thread } };
+    const { boardSource: _boardSource, customBoard: _customBoard, ...schema4 } = p;
+    const { chamfer, ...thread } = schema4.central.thread;
+    const old = { ...schema4, schemaVersion: 3, central: { ...schema4.central, thread } };
     const migrated = parseProject(old, [p.templateId]);
     expect(migrated).toEqual({ ...p, central: { ...p.central, thread: { ...thread, chamfer: { ...chamfer, enabled: false } } } });
     expect(() => parseProject({ ...old, central: { ...old.central, thread: { ...thread, chamfer } } }, [p.templateId])).toThrow();
@@ -78,7 +79,7 @@ describe('thread lead-in chamfer', () => {
 describe('project persistence and language', () => {
   it('roundtrips all manufacturing settings', () => { const p = defaultProject(); p.central.print.enabled = true; expect(parseProject(JSON.parse(JSON.stringify(p)), [p.templateId])).toEqual(p); });
   it('rejects partial, corrupt, future and unknown-template projects', () => {
-    const p = defaultProject(); for (const bad of [{}, { ...p, schemaVersion: 5 }, { ...p, templateVersion: '2' }, { ...p, kind: 'script' }, { ...p, templateId: '../file' }, { ...p, holes: [null] }, { ...p, units: 'inch' }]) expect(() => parseProject(bad, [p.templateId])).toThrow();
+    const p = defaultProject(); for (const bad of [{}, { ...p, schemaVersion: 6 }, { ...p, templateVersion: '2' }, { ...p, kind: 'script' }, { ...p, templateId: '../file' }, { ...p, holes: [null] }, { ...p, units: 'inch' }]) expect(() => parseProject(bad, [p.templateId])).toThrow();
   });
   it('preserves a stable configuration ID and parity between translations', () => { expect(configId(defaultProject())).toBe(configId(defaultProject())); expect(Object.keys(en).sort()).toEqual(Object.keys(zh).sort()); expect(Object.values(en).every(Boolean)).toBe(true); });
   it('requires explicit thread confirmation and rejects nonfinite values', () => { const p = defaultProject(); p.central.mode = 'thread'; expect(validate(p).some(i => i.code === 'confirmThread')).toBe(true); p.central.thread.confirmed = true; expect(validate(p)).toEqual([]); p.central.x = NaN; expect(validate(p)[0].code).toBe('finite'); });
@@ -126,17 +127,19 @@ describe('raised / recessed parameters', () => {
     expect(parseProject(p, [p.templateId])).toEqual(p);
   });
   it('strictly migrates schema 1 without changing its geometry settings', () => {
-    const { relief: _relief, orientation: _orientation, ...p } = defaultProject();
+    const defaults = defaultProject();
+    const { boardSource: _boardSource, customBoard: _customBoard, relief: _relief, orientation: _orientation, ...p } = defaults;
     const { chamfer: _chamfer, ...thread } = p.central.thread;
     const old = { ...p, central: { ...p.central, thread }, schemaVersion: 1, generatorVersion: '0.1.0' };
     const migrated = parseProject(old, [p.templateId]);
-    expect(migrated).toEqual({ ...p, central: { ...p.central, thread: { ...p.central.thread, chamfer: { ..._chamfer, enabled: false } } }, generatorVersion: APP_VERSION, schemaVersion: 4, relief: defaultProject().relief, orientation: defaultProject().orientation });
+    expect(migrated).toEqual({ ...p, central: { ...p.central, thread: { ...p.central.thread, chamfer: { ..._chamfer, enabled: false } } }, generatorVersion: APP_VERSION, schemaVersion: 5, relief: defaults.relief, orientation: defaults.orientation, boardSource: 'template', customBoard: defaults.customBoard });
     expect(() => parseProject({ ...old, relief: {} }, [p.templateId])).toThrow();
   });
   it('strictly migrates schema 2 and roundtrips all orientation combinations', () => {
-    const { orientation: _orientation, ...legacy } = defaultProject(); legacy.relief.enabled = true;
+    const defaults = defaultProject();
+    const { boardSource: _boardSource, customBoard: _customBoard, orientation: _orientation, ...legacy } = defaults; legacy.relief.enabled = true;
     const { chamfer, ...thread } = legacy.central.thread;
-    expect(parseProject({ ...legacy, central: { ...legacy.central, thread }, schemaVersion: 2 }, [legacy.templateId])).toEqual({ ...legacy, central: { ...legacy.central, thread: { ...thread, chamfer: { ...chamfer, enabled: false } } }, schemaVersion: 4, orientation: defaultProject().orientation });
+    expect(parseProject({ ...legacy, central: { ...legacy.central, thread }, schemaVersion: 2 }, [legacy.templateId])).toEqual({ ...legacy, central: { ...legacy.central, thread: { ...thread, chamfer: { ...chamfer, enabled: false } } }, schemaVersion: 5, orientation: defaults.orientation, boardSource: 'template', customBoard: defaults.customBoard });
     for (const frontBack of [false, true]) for (const upDown of [false, true]) {
       const p = { ...defaultProject(), orientation: { frontBack, upDown } };
       expect(parseProject(p, [p.templateId])).toEqual(p);
@@ -144,5 +147,43 @@ describe('raised / recessed parameters', () => {
     }
     for (const orientation of [{ frontBack: true }, { frontBack: true, upDown: 'false' }, { frontBack: false, upDown: false, extra: 1 }]) expect(() => parseProject({ ...defaultProject(), orientation }, [legacy.templateId])).toThrow();
     expect(() => parseProject({ ...legacy, schemaVersion: 2, orientation: {} }, [legacy.templateId])).toThrow();
+  });
+});
+describe('custom lensboard parameters', () => {
+  it('classifies rectangle, rounded rectangle, racetrack and circle at exact radius limits', () => {
+    expect(customBoardShape(100, 80, 0)).toBe('rectangle');
+    expect(customBoardShape(100, 80, 10)).toBe('roundedRectangle');
+    expect(customBoardShape(120, 80, 40)).toBe('racetrack');
+    expect(customBoardShape(80, 80, 40)).toBe('circle');
+    expect(roundedRectangleArea(80, 80, 40)).toBeCloseTo(Math.PI * 40 ** 2);
+    expect(roundedRectangleContains(74, 74, 37, 60, 60, 6, 0, true)).toBe(false);
+    expect(roundedRectangleContains(74, 74, 37, 50, 50, 8)).toBe(true);
+    expect(roundedRectangleContains(80, 80, 40, 80, 80, 40)).toBe(true);
+  });
+  it('defaults to a plain 100 mm board with optional rear light traps disabled', () => {
+    expect(defaultProject()).toMatchObject({ schemaVersion: 5, boardSource: 'template', customBoard: { width: 100, height: 100, thickness: 3, radius: 8,
+      outerLightTrap: { enabled: false, width: 3, height: 2 }, innerLightTrap: { enabled: false, width: 60, height: 60, radius: 6, heightMm: 2 } } });
+  });
+  it('rejects invalid radii and enforces relief ≤ inner ≤ outer opening ≤ board', () => {
+    const p = defaultProject(); p.boardSource = 'custom';
+    for (const change of [{ width: 0 }, { height: 401 }, { thickness: 0 }, { radius: 51 }]) expect(validate({ ...p, customBoard: { ...p.customBoard, ...change } }).some(i => i.code === 'customBoard')).toBe(true);
+    p.customBoard.outerLightTrap.enabled = true; p.customBoard.outerLightTrap.width = 50; expect(validate(p).some(i => i.code === 'outerLightTrap')).toBe(true);
+    p.customBoard.outerLightTrap.width = 3; p.customBoard.innerLightTrap.enabled = true; p.customBoard.innerLightTrap.width = 96; expect(validate(p).some(i => i.code === 'lightTrapOrder')).toBe(true);
+    p.customBoard.innerLightTrap.width = 60; p.customBoard.innerLightTrap.radius = 31; expect(validate(p).some(i => i.code === 'innerLightTrap')).toBe(true);
+    p.customBoard.width = p.customBoard.height = 80; p.customBoard.radius = 40; p.customBoard.innerLightTrap.width = p.customBoard.innerLightTrap.height = 70; p.customBoard.innerLightTrap.radius = 0; expect(validate(p).some(i => i.code === 'lightTrapOrder')).toBe(true);
+    p.customBoard = defaultProject().customBoard; p.customBoard.outerLightTrap.enabled = true; p.customBoard.innerLightTrap.enabled = true; p.relief.enabled = true;
+    expect(validate(p)).toEqual([]);
+    p.customBoard.innerLightTrap.radius = p.relief.radius; expect(validate(p)).toEqual([]);
+    p.customBoard.innerLightTrap.radius = 6;
+    p.relief.width = 61; expect(validate(p).some(i => i.code === 'lightTrapOrder' && i.feature === 'relief')).toBe(true);
+    p.relief.width = 60; p.customBoard.innerLightTrap.enabled = false; expect(validate(p)).toEqual([]);
+    p.customBoard.outerLightTrap.enabled = false; expect(validate(p)).toEqual([]);
+  });
+  it('strictly migrates a complete schema 4 project to template mode', () => {
+    const p = defaultProject(); p.orientation.upDown = true;
+    const { boardSource: _boardSource, customBoard: _customBoard, ...old } = p;
+    const migrated = parseProject({ ...old, schemaVersion: 4, generatorVersion: '0.2.4' }, [p.templateId]);
+    expect(migrated).toEqual({ ...p, generatorVersion: APP_VERSION, boardSource: 'template', customBoard: defaultProject().customBoard });
+    expect(() => parseProject({ ...old, schemaVersion: 4, customBoard: {} }, [p.templateId])).toThrow();
   });
 });

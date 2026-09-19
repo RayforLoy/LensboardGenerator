@@ -39,6 +39,6 @@ v0.1.0 每次几何下载提供 ZIP：
 
 ## English summary
 
-Original project content, the ten user-authored STEP templates (six initial plus four additions) and their derivative designs use GPL-3.0-only. Third-party components and future user-uploaded assets retain their actual terms. The generator's license alone does not relicense every output.
+Original project content, the twelve user-authored STEP templates (six initial plus six additions) and their derivative designs use GPL-3.0-only. Third-party components and future user-uploaded assets retain their actual terms. The generator's license alone does not relicense every output.
 
 ZIP downloads include geometry, reconstruction parameters, provenance and GPL text, plus the source STEP for lensboards. Formal distribution must address the preferred form for modification; excluded native files are not silently published, and STEP is not universally asserted to be complete corresponding source.

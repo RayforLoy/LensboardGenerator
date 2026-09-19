@@ -1,6 +1,6 @@
 # 模板与参数规范草案
 
-状态：v0.2.4 十模板和 schemaVersion=4；公开部署见部署记录。下文为目标规范，元数据暂未全部实现，具体见 [实施状态](IMPLEMENTATION_STATUS.md)。
+状态：v0.3.0 十二模板和 schemaVersion=5 已完成本地自动验证，尚未发布；公开部署仍为 v0.2.4。下文为目标规范，元数据与验证状态见 [实施状态](IMPLEMENTATION_STATUS.md)。
 
 ## 1. 模板来源
 
@@ -42,6 +42,10 @@ v0.2.2 基座尺寸只核对主板（不含附件）的 XY 包围范围；按光
 初始文件的文本 mm 声明不是几何检验结果，原坐标轴不一定是 Z 向厚度；必须登记实际变换。具有多个实体声明的模板识别装配 / 连通关系，并明确加工对象和输出对象；不得无说明丢弃非主板体。
 
 ## 3. 项目 JSON
+
+schema 5 新增 `boardSource` 和完整 `customBoard` 对象。`boardSource=template` 时按登记 templateId/version 加载 STEP；`custom` 时 templateId 仅作为切回模板模式时的编辑状态，不参与实体、来源包或几何描述。customBoard 主体保存 width/height/thickness/radius；outerLightTrap 保存 enabled/width/height；innerLightTrap 保存 enabled/width/height/radius/heightMm，其中 heightMm 是凸出高度。主体及内圈半径范围为 0..min(width,height)/2；外圈内轮廓的长宽为主体各减 2×width，圆角为 max(0,主体R−width)。遮光高度向背面 −Z 延伸且不表示切槽深度。schema 4 只有通过原完整结构检查后才迁移为 template 和默认关闭的 customBoard；旧 1/2/3 继续逐级严格迁移。
+
+自定义板的参数来源说明取代源 STEP 清单；ZIP 不附带闲置 templateId 对应资产。自定义与模板模式都必须保存相同单位、孔和制造参数，切换来源不把语言或显示偏好写入 JSON。自定义板可启用 relief；解析及建模按 relief 外轮廓≤内圈外轮廓≤外圈内轮廓≤板外轮廓逐级检查，关闭的层跳过、等轮廓允许。
 
 schema 4 在 central.thread 中保存 chamfer={enabled:boolean,mode:pitch|custom,sizeMm:number}；新设计默认 enabled=true / pitch / 1.2 mm，实际自动尺寸=1.2P，关闭返回0但保留手动值。固定45°，不保存可变角度；真实模式从基本小径加径向间隙、底孔模式从确认底孔起倒角。保护半径包含入口最大外径，但底孔圆柱仍使用原小径/底孔值。length是含倒角段的加工长度，完整牙型约length−C，不能自动延伸超厚。完整 schema 1/2/3 按各自旧结构严格检查后逐级迁移到4，并添加 enabled=false 的倒角；拒绝新版缺失倒角、旧版伪造倒角、额外字段、未知模式。旧版本叙述以下保留为历史。
 

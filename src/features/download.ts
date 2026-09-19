@@ -14,16 +14,22 @@ export function fileStem(p: Project) {
   const mode = !c.enabled ? 'blank' : c.mode === 'plain' ? `hole-${actualDiameter(p).toFixed(2)}mm` : `M${c.thread.diameter}x${c.thread.pitch}-${c.thread.mode}-${c.thread.leftHand ? 'LH' : 'RH'}`;
   const relief = p.kind === 'board' && p.relief.enabled ? `-${p.relief.spacing > 0 ? 'raised' : 'recessed'}-${Math.abs(p.relief.spacing)}mm` : '';
   const chamfer = c.enabled && c.mode === 'thread' && c.thread.chamfer.enabled ? `-C${threadChamferSize(c.thread).toFixed(2)}-45deg` : '';
-  return `${p.kind === 'board' ? p.templateId : 'flange'}${relief}-${mode}${chamfer}-${configId(p)}`;
+  const source = p.kind === 'board' ? (p.boardSource === 'custom' ? `custom-board-${p.customBoard.width}x${p.customBoard.height}x${p.customBoard.thickness}-R${p.customBoard.radius}` : p.templateId) : 'flange';
+  return `${source}${relief}-${mode}${chamfer}-${configId(p)}`;
 }
 export async function downloadPackage(format: 'step' | 'stl', bytes: ArrayBuffer, p: Project) {
-  const stem = fileStem(p), template = p.kind === 'board' ? templateById(p.templateId) : undefined;
+  const stem = fileStem(p), template = p.kind === 'board' && p.boardSource === 'template' ? templateById(p.templateId) : undefined;
+  const sourceDescription = p.kind === 'board' && p.boardSource === 'custom' ? 'Original parametric custom lensboard' : template?.file ?? 'Original parametric flange';
   const files: Record<string, Uint8Array> = {
     [`${stem}.${format}`]: new Uint8Array(bytes),
     [`${stem}.json`]: strToU8(JSON.stringify(p, null, 2)),
     'LICENSE.txt': strToU8(license),
-    'PROVENANCE.txt': strToU8(`LensboardGenerator ${APP_VERSION}\nLicense: GPL-3.0-only\nUnits: mm\nTemplate: ${template?.file ?? 'Original parametric flange'}\nTemplate version: ${template?.version ?? '1'}\nTemplate SHA-256: ${template?.sha256 ?? 'not applicable'}\nAuthor: project owner (user-authored initial STEP / original project design)\nShutter opening reference: ${SOURCE_URL}\nConfiguration: ${configId(p)}\nCentral mode: ${p.central.mode === 'thread' ? p.central.thread.mode : 'plain aperture'}\nNominal aperture diameter: ${p.central.diameter} mm\nActual plain aperture diameter: ${actualDiameter(p)} mm\nPrint optimization: ${p.kind === 'board' && p.central.mode === 'plain' && p.central.print.enabled}\nReconstruction: use the included project JSON and matching template with this generator version. The generator source and lockfile are in the repository from which this app was built.\nSTEP does not preserve the app feature tree. STL stores no reliable unit metadata.\nNo camera-fit, load-bearing, thread tolerance-class or light-sealing certification. Test before manufacturing.\n无担保；制造前请试配并为重镜头提供独立支撑。\n`),
+    'PROVENANCE.txt': strToU8(`LensboardGenerator ${APP_VERSION}\nLicense: GPL-3.0-only\nUnits: mm\nTemplate: ${sourceDescription}\nTemplate version: ${template?.version ?? '1'}\nTemplate SHA-256: ${template?.sha256 ?? 'not applicable'}\nAuthor: project owner (user-authored initial STEP / original project design)\nShutter opening reference: ${SOURCE_URL}\nConfiguration: ${configId(p)}\nCentral mode: ${p.central.mode === 'thread' ? p.central.thread.mode : 'plain aperture'}\nNominal aperture diameter: ${p.central.diameter} mm\nActual plain aperture diameter: ${actualDiameter(p)} mm\nPrint optimization: ${p.kind === 'board' && p.central.mode === 'plain' && p.central.print.enabled}\nReconstruction: use the included project JSON${template ? ' and matching template' : ''} with this generator version. The generator source and lockfile are in the repository from which this app was built.\nSTEP does not preserve the app feature tree. STL stores no reliable unit metadata.\nNo camera-fit, load-bearing, thread tolerance-class or light-sealing certification. Test before manufacturing.\n无担保；制造前请试配并为重镜头提供独立支撑。\n`),
   };
+  if (p.kind === 'board' && p.boardSource === 'custom') {
+    const b = p.customBoard;
+    files['CUSTOM-BOARD.txt'] = strToU8(`Body: ${b.width} x ${b.height} x ${b.thickness} mm, corner radius ${b.radius} mm\nRear outer light-trap ring: ${b.outerLightTrap.enabled ? `width ${b.outerLightTrap.width} mm, height ${b.outerLightTrap.height} mm` : 'disabled'}\nRear inner light-trap boss: ${b.innerLightTrap.enabled ? `${b.innerLightTrap.width} x ${b.innerLightTrap.height} mm, radius ${b.innerLightTrap.radius} mm, height ${b.innerLightTrap.heightMm} mm` : 'disabled'}\nRear features extend in -Z and are not light-sealing or structural certifications.\n`);
+  }
   if (template) {
     const response = await fetch(template.url);
     if (!response.ok) throw Error('template');
