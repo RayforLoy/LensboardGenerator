@@ -1,6 +1,6 @@
 # 初始 STEP 模板目录
 
-登记日期：2026-09-19 · 清单版本：0.3 · 来源：用户自己绘制并提供的 `steps/` 文件。v0.3.0 的两个新增模板及代码尚未远端发布。
+登记日期：2026-09-25 · 清单版本：0.4 · 来源：用户自己绘制并提供的 `steps/` 文件。v0.3.1 新增 Rollei X-ACT2，发布状态见实施与部署记录。
 
 用户已确认这些镜头板模板按 [GPL 第 3 版](../LICENSE)（GPL-3.0-only）开源。初始模板使用原始 STEP，不从 scadtest 重新复制 STL。所有原 STEP 保持字节不变；v0.1.0 已进行 WASM CAD 导入和导出后的独立 native OCCT 检查，尚未实物验收，见 [实施状态](IMPLEMENTATION_STATUS.md)。
 
@@ -20,16 +20,17 @@
 | `toyo158-simplified-blank` | TOYO 158 简化空白板 | [TOYO158_Lensboard_simplified_blank.STEP](../steps/TOYO158_Lensboard_simplified_blank.STEP) | 46182 | 1 |
 | `graflex-pre-anniversary-45-blank` | Graflex Pre-Anniversary 4×5 空白板 | [Graflex_pre_anniversary_4x5_lensboard_blank.STEP](../steps/Graflex_pre_anniversary_4x5_lensboard_blank.STEP) | 27934 | 1 |
 | `linhof-technika-iii-iv-69-blank` | Linhof Technika III/IV 6×9 空白板 | [Linhof_technika_iii_iv_6x9_lensboard_blank.STEP](../steps/Linhof_technika_iii_iv_6x9_lensboard_blank.STEP) | 52285 | 1 |
+| `rollei-xact2-blank` | Rollei X-ACT2 空白板 | [Rollei_xact2_lensboard_blank.STEP](../steps/Rollei_xact2_lensboard_blank.STEP) | 34456 | 1 |
 
 显示名称仅依据用户文件名，具体相机兼容范围尚待装机记录。原有完整 / 简化版本分别登记，不只保留一个版本。
 
 ## 已检查与未检查
 
-12 个文件均有 ISO-10303-21 文本标记、`CONFIG_CONTROL_DESIGN`（AP203）schema 和 mm 的 SI_UNIT 声明。这仅是文本检查，不证明实体有效、没有已有孔、只有一个零件，或坐标已经符合网页基准。
+13 个文件均有 ISO-10303-21 文本标记、`CONFIG_CONTROL_DESIGN`（AP203）schema 和 mm 的 SI_UNIT 声明。这仅是文本检查，不证明实体有效、没有已有孔、只有一个零件，或坐标已经符合网页基准。
 
 特别是 `Horseman_Lensboard_blank.STEP` 中有 2 个 MANIFOLD_SOLID_BREP 声明，其他文件各有 1 个。M1 必须识别实体 / 装配关系、主板体及可能的附属体，明确哪些体可加工、哪些需要一起输出；不得自动取最大体后丢弃其余内容。声明数量不是内核导入后的连通实体数量验收结果。
 
-当前导入变换和当地厚度见下表；仍需补齐安装中心实测、卡口 / 筋位 / 遮光的精确保护区域与实机配合。十二个源文件均以 Y 为厚度轴，绕 X +90°，即 x'=x、y'=-z、z'=y，再移动使源最小 Y 映射至 Z=0；仅旧 Graflex Pacemaker 简化板另将 X 平移 -150 mm，新 Graflex 无该平移。变换只作用于运行时模型，不改原 STEP。
+当前导入变换和当地厚度见下表；仍需补齐安装中心实测、卡口 / 筋位 / 遮光的精确保护区域与实机配合。十三个源文件均以 Y 为厚度轴，绕 X +90°，即 x'=x、y'=-z、z'=y，再移动使源最小 Y 映射至 Z=0；仅旧 Graflex Pacemaker 简化板另将 X 平移 -150 mm，其余模板无该平移。变换只作用于运行时模型，不改原 STEP。
 
 | 模板 | 标准化外形包围盒 mm | 中央当地厚度 mm | 加工区候选半径 mm |
 | --- | --- | --- | --- |
@@ -45,8 +46,9 @@
 | TOYO 158 简化 | 158.6 × 158.6 × 6.5 | 2.5（Z=0…2.5） | 62 |
 | Graflex Pre-Anniversary 4×5 | 102 × 100.5 × 6.5 | 6.5（Z=0…6.5） | 35 |
 | Linhof Technika III/IV 6×9 | 74.75 × 82 × 2 | 2（Z=0…2） | 26 |
+| Rollei X-ACT2 | 90.8 × 90.8 × 7.5 | 2（Z=0…2） | 35 |
 
-v0.2.0 四模板及 v0.3.0 两模板同样以 Y 为厚度轴，绕 X +90°、源最小 Y 平移到 Z=0；均有一个有效实体，中心 #0 通孔 34.6 mm 的实体建模、STEP/STL导出及独立重读已执行。CAMBO 和新 Linhof 的 Y 外形不对称，不用包围盒中心替换模板原点。保守圆区不是认证；60×60 mm 凸凹基座可能不适合小模板，需减小外轮廓。
+v0.2.0 四模板、v0.3.0 两模板及 v0.3.1 Rollei 模板同样以 Y 为厚度轴，绕 X +90°、源最小 Y 平移到 Z=0；均有一个有效实体。Rollei 的中心 #0 通孔与三种非默认方向已完成 STEP/STL 生成及独立重读；CAMBO 和新 Linhof 的 Y 外形不对称，不用包围盒中心替换模板原点。保守圆区不是认证；60×60 mm 凸凹基座可能不适合小模板，需减小外轮廓。
 
 候选圆区不是厂家保护区认证；每个孔另以「孔外半径 +1.5 mm」实体探针检查当地完整均匀材料。Horseman 的较大孔会跨越非均匀区域而被拒绝；附属实体保留在 STEP / STL 中，禁止加工其 XY 投影附近。Linhof 的 Y 包围盒不对称，不自动将光轴移动到包围盒中心。
 
@@ -72,6 +74,7 @@ v0.2.1 可在选择模板后前后翻转（主板 Z 中点绕 Y 180°）/ 上下
 - `TOYO158_Lensboard_simplified_blank.STEP`：`beb273db71c74ead970c12d36b0082f23524df5f6d6bf88c6f32386f273d83d7`
 - `Graflex_pre_anniversary_4x5_lensboard_blank.STEP`：`f2b6c9e67a583b5100412cf975c18876470185b51eb16897eea25ed0dd049c20`
 - `Linhof_technika_iii_iv_6x9_lensboard_blank.STEP`：`92485a2fa839eb855225d02e96d240d71ea816ee1ee7fa1300372fb4c9ae1515`
+- `Rollei_xact2_lensboard_blank.STEP`：`28bbc59c8396f4cf42f186eb1b25012a0e1a3abb86aca50db08d39dd6a27ddb9`
 
 后续文件内容变化需更新模板版本和校验值，旧项目不得静默指向新几何。SHA-256 用于身份和完整性检查，不等于质量认证。
 

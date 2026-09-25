@@ -2,7 +2,7 @@
 
 大画幅镜头板 / 法兰生成器 · Large-format lensboard & flange generator
 
-实验性 v0.3.0 本地开发版，已完成自动验证但尚未提交、推送或发布；在线站点仍为 v0.2.4。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；见 [更新日志](CHANGELOG.md) 与 [实施状态](docs/IMPLEMENTATION_STATUS.md)。
+实验性 v0.3.1 发布候选已完成本地自动验证，新增第十三个 Rollei X-ACT2 模板，项目 schema 仍为 5。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；本轮验证及公开部署状态见 [更新日志](CHANGELOG.md)、[实施状态](docs/IMPLEMENTATION_STATUS.md) 与 [部署记录](docs/DEPLOYMENT.md)。
 
 在线使用：[Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/) · [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues)。
 
@@ -10,7 +10,7 @@
 
 ### 功能
 
-- 十二个自绘 STEP 模板：Sinar、Horseman、Linhof、Graflex、ALPA、Arca 141、CAMBO TWR54、TOYO 158，新增 Graflex Pre-Anniversary 4×5 与 Linhof Technika III/IV 6×9；保留完整 / 简化版本，Horseman 完整版的附属实体保留输出。
+- 十三个自绘 STEP 模板：Sinar、Horseman、Linhof、Graflex、ALPA、Arca 141、CAMBO TWR54、TOYO 158 与 Rollei X-ACT2；包括 Graflex Pre-Anniversary 4×5、Linhof Technika III/IV 6×9，保留完整 / 简化版本，Horseman 完整版的附属实体保留输出。
 - 自定义镜头板：通过长、宽、厚度、圆角半径生成解析 B-rep；R=0 是矩形，R=半短边是跑道形，等边时为圆形。可在背面生成向内等距的外圈遮光环和指定尺寸的内圈圆角矩形遮光台，均向 −Z 凸出；并可继续叠加凸板/凹板。完整轮廓须满足凸凹板≤内圈≤外圈内边界≤外形，关闭层跳过、等轮廓允许。
 - 模板前后翻转（绕 Y 轴 180°）/ 上下翻转（绕 Z 轴 180°），附件一起旋转；先翻转再按最终 XY 坐标加工，+Z 始终正面，STEP / STL / 参数同步。预览显示世界原点的三色坐标轴、箭头及 XYZ。切换模板清除翻转。
 - 凸凹基座按用户选择仅比较主板 X / Y 外尺寸范围，取消基座厚度均匀 / 材料完整校验和额外 1.5 mm 余量；允许等于范围，超过任一侧报错。跨筋位 / 台阶不因此阻断，但可能切除安装 / 遮光结构，需人工检查；真实附件干涉与有效实体检查仍保留。Linhof / CAMBO 默认 60×60 mm 凸凹已可生成，非装机认证。
@@ -86,13 +86,13 @@ scadtest/ 整体忽略且不打包；steps/ 仅 STEP/STP 白名单纳入 Git、�
 
 ### 许可
 
-原创代码、十二个用户自绘 STEP、自定义参数化板及衍生模型采用 [GPL-3.0-only](LICENSE)，第三方依赖保留原许可。构建附 GPL 文本、[第三方通知](THIRD_PARTY_NOTICES.md) 和依赖许可正文；公开分发需同时提供可修改源码、锁文件、构建说明及 WASM 对应源构建来源，见 [许可范围](docs/LICENSING.md)。
+原创代码、十三个用户自绘 STEP、自定义参数化板及衍生模型采用 [GPL-3.0-only](LICENSE)，第三方依赖保留原许可。构建附 GPL 文本、[第三方通知](THIRD_PARTY_NOTICES.md) 和依赖许可正文；公开分发需同时提供可修改源码、锁文件、构建说明及 WASM 对应源构建来源，见 [许可范围](docs/LICENSING.md)。
 
 ## English
 
-Local experimental v0.3.0 adds a parametric custom-lensboard source with length, width, thickness and corner radius. R=0 is a rectangle; R at half the shorter side is a racetrack, or a circle for equal sides. Optional rear outer light-trap rings and centered rounded-rectangle bosses project toward −Z; raised/recessed boards can be stacked when full outlines satisfy relief ≤ inner boss ≤ outer-ring opening ≤ board. Disabled layers are skipped and equal outlines are allowed. Custom exports omit unrelated STEP templates. Schema5 strictly migrates complete schema1–4 projects into template mode without changing old geometry. This version has been verified locally but is not yet committed, pushed or deployed; the public site remains v0.2.4.
+Experimental v0.3.1 adds the thirteenth user-authored template, Rollei X-ACT2, while retaining schema 5 and the v0.3.0 custom-lensboard source. Custom boards support length, width, thickness and corner radius; R=0 is a rectangle, R at half the shorter side is a racetrack, or a circle for equal sides. Optional rear outer light-trap rings and centered rounded-rectangle bosses project toward −Z; raised/recessed boards can be stacked when full outlines satisfy relief ≤ inner boss ≤ outer-ring opening ≤ board. Disabled layers are skipped and equal outlines are allowed. Custom exports omit unrelated STEP templates. Complete schema1–4 projects migrate strictly into template mode without changing old geometry.
 
-CAD runs locally in a Web Worker with Replicad/OpenCascade WASM. Twelve user-authored STEP templates, procedural custom boards and flanges, sourced shutter apertures, optional +0.5 mm diameter printing allowance, actual metric threads and composite machining holes are available. Hollow raised/recessed template boards remain supported separately. Templates/accessories rotate together before final-coordinate machining; preview includes world axes and optional topology edges, with dark navy/cyan defaults. Accessory interference, local-hole material and valid-solid checks remain. Simplified Chinese is default; language and view preferences persist independently. Inspect mounting/light-sealing geometry and test physical fit.
+CAD runs locally in a Web Worker with Replicad/OpenCascade WASM. Thirteen user-authored STEP templates, procedural custom boards and flanges, sourced shutter apertures, optional +0.5 mm diameter printing allowance, actual metric threads and composite machining holes are available. Hollow raised/recessed template boards remain supported separately. Templates/accessories rotate together before final-coordinate machining; preview includes world axes and optional topology edges, with dark navy/cyan defaults. Accessory interference, local-hole material and valid-solid checks remain. Simplified Chinese is default; language and view preferences persist independently. Inspect mounting/light-sealing geometry and test physical fit.
 
 Real solid STEP and checked binary STL download in a ZIP with JSON, GPL text and provenance; built-in-template exports include the original template, while custom boards include a parameter note. Use Node.js 24 / pnpm 11.19.0: `pnpm install --frozen-lockfile`, then `pnpm dev` at http://127.0.0.1:5273/. Run pnpm build, pnpm test, pnpm test:cad and pnpm test:e2e. Browser tests default to installed Edge; TEST_BROWSER and TEST_URL override. requirements-dev.txt contains optional independent verification tools, never a backend.
 

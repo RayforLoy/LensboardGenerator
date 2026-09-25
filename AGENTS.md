@@ -2,7 +2,7 @@
 
 ## Scope and current stage
 
-本文件是仓库级代理协作说明（用户请求的 `agents.md`，使用规范名称 `AGENTS.md`，便于在 Linux / GitHub 上识别）。项目当前本地版本 v0.3.0 / schema 5，公开版本仍为 v0.2.4；验证与未完成需求见 `docs/IMPLEMENTATION_STATUS.md`。
+本文件是仓库级代理协作说明（用户请求的 `agents.md`，使用规范名称 `AGENTS.md`，便于在 Linux / GitHub 上识别）。项目当前开发版本 v0.3.1 / schema 5，公开版本见部署记录；验证与未完成需求见 `docs/IMPLEMENTATION_STATUS.md`。
 
 - 先阅读 `PRD.md`、`docs/ARCHITECTURE.md`、`docs/TEMPLATE_SPEC.md` 和 `docs/TEST_PLAN.md`。
 - 写应用代码前，将任何新功能、范围调整、技术降级和验收变化写入 PRD，并向用户说明。不得把未验证的设计写成已实现。
@@ -13,7 +13,7 @@
 
 - `scadtest/` 仅供本地功能研究，必须保持被忽略。不要修改、删除、提交、上传，或通过构建复制它。
 - `steps/` 是初始模板源目录，仅允许 `.step` / `.stp`（大小写不敏感）进入模板清单、Git 和构建。其他文件保持本地忽略，不读取其模型内容、不删除、不重命名发布；导入检查不修改原 STEP 字节。
-- 用户已确认初始及新增 STEP 为自绘（当前十二个），并选择 GPL-3.0-only 用于网页原创代码、模板及基于它们的衍生输出。遵循 `LICENSE` 和 `docs/LICENSING.md`，第三方许可不改写。
+- 用户已确认初始及新增 STEP 为自绘（当前十三个），并选择 GPL-3.0-only 用于网页原创代码、模板及基于它们的衍生输出。遵循 `LICENSE` 和 `docs/LICENSING.md`，第三方许可不改写。
 - 不假设参考 STL 可再分发，不把代码里的演示尺寸宣称为厂家标准。
 - 可发布模板、字体和其他资产必须有来源、许可及验证状态。应用许可不覆盖第三方资产许可。
 - 保留已有用户更改；不运行破坏性 git 回滚，不自动推送或发布。

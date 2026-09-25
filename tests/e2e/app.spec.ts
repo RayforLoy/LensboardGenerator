@@ -67,7 +67,7 @@ test('ALPA cap hole60 and M65 use end-face protection after JSON import and expo
     const pending = page.waitForEvent('download'); await page.getByTestId('export-step').click();
     const file = await pending, zip = unzipSync(readFileSync((await file.path())!));
     const json = JSON.parse(strFromU8(zip[Object.keys(zip).find(n => n.endsWith('.json'))!]));
-    expect(json.central.mode).toBe(mode); expect(json.generatorVersion).toBe('0.3.0');
+    expect(json.central.mode).toBe(mode); expect(json.generatorVersion).toBe('0.3.1');
     expect(json.relief.width).toBe(80); expect(Object.keys(zip).some(n => n.endsWith('.step'))).toBe(true);
   }
   // Turning relief off must NOT exempt a 60 mm hole in the original ALPA board.
@@ -161,7 +161,7 @@ test('relief controls, end-face machining, edges and schema 1 migration', async 
   const file = await event; const path = testInfo.outputPath('relief-step.zip'); await file.saveAs(path);
   expect(file.suggestedFilename()).toContain('recessed-17mm');
   const zip = unzipSync(readFileSync(path)), json = JSON.parse(strFromU8(zip[Object.keys(zip).find(k => k.endsWith('.json'))!]));
-  expect(json.schemaVersion).toBe(5); expect(json.generatorVersion).toBe('0.3.0');
+  expect(json.schemaVersion).toBe(5); expect(json.generatorVersion).toBe('0.3.1');
   expect(json.relief).toMatchObject({ enabled: true, spacing: -17, shape: 'circle', angle: 90 });
   await page.getByLabel('名义孔径', { exact: true }).fill('54');
   await expect(page.getByRole('alert')).toContainText('超出端面内腔');
@@ -304,12 +304,12 @@ test('custom lensboard profiles and rear light traps export without an unrelated
   expect(errors).toEqual([]);
 });
 
-test('all twelve templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
+test('all thirteen templates load, STL downloads, and invalid JSON preserves the design', async ({ page }, testInfo) => {
   await page.goto('./');
   await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 60000 });
   const templates = page.getByRole('combobox', { name: '镜头板模板', exact: true });
-  await expect(templates.locator('option')).toHaveCount(12);
-  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'linhof-technika-iii-iv-69-blank', 'graflex-pacemaker45-simplified-blank', 'graflex-pre-anniversary-45-blank', 'sinar-simplified-blank', 'alpa-blank', 'arca141-blank', 'cambo-twr54-simplified-blank', 'toyo158-simplified-blank', 'sinar-blank']) {
+  await expect(templates.locator('option')).toHaveCount(13);
+  for (const id of ['horseman-blank', 'horseman-simplified-blank', 'linhof-blank', 'linhof-technika-iii-iv-69-blank', 'graflex-pacemaker45-simplified-blank', 'graflex-pre-anniversary-45-blank', 'rollei-xact2-blank', 'sinar-simplified-blank', 'alpa-blank', 'arca141-blank', 'cambo-twr54-simplified-blank', 'toyo158-simplified-blank', 'sinar-blank']) {
     await templates.selectOption(id);
     await expect(page.getByTestId('model-status')).toContainText('模型已就绪', { timeout: 30000 });
     await expect(page.getByRole('alert')).toHaveCount(0);

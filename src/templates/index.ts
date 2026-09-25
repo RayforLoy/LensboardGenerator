@@ -11,6 +11,7 @@ import cambo from '../../steps/CAMBO TWR54_Lensboard_simplified_blank.STEP?url';
 import toyo from '../../steps/TOYO158_Lensboard_simplified_blank.STEP?url';
 import graflexPreAnniversary from '../../steps/Graflex_pre_anniversary_4x5_lensboard_blank.STEP?url';
 import linhofTechnika69 from '../../steps/Linhof_technika_iii_iv_6x9_lensboard_blank.STEP?url';
+import rolleiXact2 from '../../steps/Rollei_xact2_lensboard_blank.STEP?url';
 
 export interface Template {
   id: string; version: string; name: string; variant: 'full' | 'simple';
@@ -28,6 +29,7 @@ export const templates: Template[] = [
   { id: 'graflex-pacemaker45-simplified-blank', name: 'Graflex Pacemaker 4×5', variant: 'simple', url: graflex, file: 'Graflex_pacemaker45_Lensboard_simplified_blank.STEP', sha256: 'cedd27ada02959bd200d4916438f101240282fb46b2ba1d14a76f59f4b027ecc', rotationX: 90, editableRadius: 35, sourceShiftX: -150, version: '1' },
   { id: 'graflex-pre-anniversary-45-blank', name: 'Graflex Pre-Anniversary 4×5', variant: 'full', url: graflexPreAnniversary, file: 'Graflex_pre_anniversary_4x5_lensboard_blank.STEP', sha256: 'f2b6c9e67a583b5100412cf975c18876470185b51eb16897eea25ed0dd049c20', rotationX: 90, editableRadius: 35, version: '1' },
   { id: 'linhof-technika-iii-iv-69-blank', name: 'Linhof Technika III/IV 6×9', variant: 'full', url: linhofTechnika69, file: 'Linhof_technika_iii_iv_6x9_lensboard_blank.STEP', sha256: '92485a2fa839eb855225d02e96d240d71ea816ee1ee7fa1300372fb4c9ae1515', rotationX: 90, editableRadius: 26, version: '1' },
+  { id: 'rollei-xact2-blank', name: 'Rollei X-ACT2', variant: 'full', url: rolleiXact2, file: 'Rollei_xact2_lensboard_blank.STEP', sha256: '28bbc59c8396f4cf42f186eb1b25012a0e1a3abb86aca50db08d39dd6a27ddb9', rotationX: 90, editableRadius: 35, version: '1' },
   { id: 'alpa-blank', name: 'ALPA', variant: 'full', url: alpa, file: 'ALPA_Lensboard_blank.STEP', sha256: '986ad6493b9b094e8004ae934dc03409c58e12a4b5cef587417f7126c967d12c', rotationX: 90, editableRadius: 30, version: '1' },
   { id: 'arca141-blank', name: 'Arca 141', variant: 'full', url: arca, file: 'Arca141_Lensboard_blank.STEP', sha256: 'd22eefdd89cfdc3a33a6abb26802560067902b38a11d6510fe2586bc7de778bf', rotationX: 90, editableRadius: 54, version: '1' },
   { id: 'cambo-twr54-simplified-blank', name: 'CAMBO TWR54', variant: 'simple', url: cambo, file: 'CAMBO TWR54_Lensboard_simplified_blank.STEP', sha256: '04a5fe3be495fcf2fffbce2ccac948436af70aa6dc62adfe1391f1792376cca6', rotationX: 90, editableRadius: 26, version: '1' },

@@ -1,6 +1,6 @@
 # 模板与参数规范草案
 
-状态：v0.3.0 十二模板和 schemaVersion=5 已完成本地自动验证，尚未发布；公开部署仍为 v0.2.4。下文为目标规范，元数据与验证状态见 [实施状态](IMPLEMENTATION_STATUS.md)。
+状态：v0.3.1 十三模板已完成本地自动验证，schemaVersion=5 不变；公开部署状态见 [实施状态](IMPLEMENTATION_STATUS.md)。下文为目标规范。
 
 ## 1. 模板来源
 

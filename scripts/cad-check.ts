@@ -135,6 +135,7 @@ const datums: Record<string, [number, number, number]> = {
   'Sinar_Lensboard_simplified_blank.STEP': [5, 0, 3.15], 'TOYO158_Lensboard_simplified_blank.STEP': [6.5, 0, 2.5],
   'Graflex_pre_anniversary_4x5_lensboard_blank.STEP': [6.5, 0, 6.5],
   'Linhof_technika_iii_iv_6x9_lensboard_blank.STEP': [2, 0, 2],
+  'Rollei_xact2_lensboard_blank.STEP': [7.5, 0, 2],
 };
 for (const [file, [height, lo, hi]] of Object.entries(datums)) {
   const source = new Blob([readFileSync(`steps/${file}`)]);
