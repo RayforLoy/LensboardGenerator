@@ -197,9 +197,9 @@ export async function buildModel(p: Project, template?: Template, blob?: Blob): 
       if (!template || !blob) throw new GeometryError('template');
       const raw = await importSTEP(blob);
       if (!isValid(raw)) { raw.delete(); throw new GeometryError('invalidSolid'); }
-      const source = boundsOf(raw);
       const rotated = raw.rotate(template.rotationX, [0, 0, 0], [1, 0, 0]); raw.delete();
-      const normalized = rotated.translate(template.sourceShiftX ?? 0, 0, -source[0][1]); rotated.delete();
+      const rotatedBounds = boundsOf(rotated);
+      const normalized = rotated.translate(template.sourceShiftX ?? 0, 0, -rotatedBounds[0][2]); rotated.delete();
       const solids = normalized.solids;
       normalized.delete();
       solids.sort((a, b) => measureVolume(b) - measureVolume(a));

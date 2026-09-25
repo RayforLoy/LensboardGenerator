@@ -2,7 +2,7 @@
 
 ## Scope and current stage
 
-本文件是仓库级代理协作说明（用户请求的 `agents.md`，使用规范名称 `AGENTS.md`，便于在 Linux / GitHub 上识别）。项目当前本地与公开版本均为 v0.3.1 / schema 5；验证与未完成需求见 `docs/IMPLEMENTATION_STATUS.md`。
+本文件是仓库级代理协作说明（用户请求的 `agents.md`，使用规范名称 `AGENTS.md`，便于在 Linux / GitHub 上识别）。公开网页为 v0.3.1；本地源码为 v0.3.2 / schema 5，包含尚未测试 / 发布的模板维护器；验证与未完成需求见 `docs/IMPLEMENTATION_STATUS.md`。
 
 - 先阅读 `PRD.md`、`docs/ARCHITECTURE.md`、`docs/TEMPLATE_SPEC.md` 和 `docs/TEST_PLAN.md`。
 - 写应用代码前，将任何新功能、范围调整、技术降级和验收变化写入 PRD，并向用户说明。不得把未验证的设计写成已实现。

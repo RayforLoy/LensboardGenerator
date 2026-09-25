@@ -1,5 +1,12 @@
 # Changelog / 更新日志
 
+## 0.3.2 — 2026-09-26（本地维护工具版本）
+
+- 新增 Windows 本地 Python/Tkinter 镜头板模板维护器和 `pnpm template:manager` 启动入口。工具单独选择 STEP/STP，核对许可确认、元数据、SHA-256、STEP schema / mm 声明，并调用现有 Replicad/OpenCascade 内核检查有效性、实体数、变换后包围盒与中心厚度。
+- 先展示明确文件清单与差异，再由操作者写入；提交推送是独立确认步骤，仅暂存本次文件并推送 `origin/main`，拒绝脏工作区 / 非 main / 远程不一致。维护器同步版本、模板清单、许可、PRD、README、变更日志和动态模板回归清单。
+- 旋转后按最低 Z 对齐至零，以支持独立录入方向角；现有 +90°模板的归一化结果不变。项目 schema 保持 5。
+- 本轮未运行测试、CAD 重读、构建、Git 提交 / 推送或 Pages 部署；工具代码与协议须在使用新模板前实际验收。新增模板默认保持 `experimental`，不代表实机兼容认证。
+
 ## 0.3.1 — 2026-09-25
 
 - 新增用户自绘 `Rollei_xact2_lensboard_blank.STEP`，登记为 Rollei X-ACT2 实验模板；原字节 SHA-256、AP203 / mm、标准化方向、单实体、外形和中心当地厚度均进入模板目录。

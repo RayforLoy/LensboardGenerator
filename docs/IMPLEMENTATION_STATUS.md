@@ -1,5 +1,15 @@
 # 实施与验证状态
 
+## v0.3.2 — 本地模板维护器，2026-09-26
+
+新增 `scripts/template_manager_gui.py` 本地 Tkinter 维护器和 `scripts/inspect-template.ts` 单文件 CAD 检查器，项目应用版本更新至 0.3.2，schema 仍为 5。公开网站当前仍是 v0.3.1；本轮没有提交、推送或部署。
+
+- GUI 收集模板 ID、显示名、类型、模板 / 应用版本、X 轴角度、X 平移、保守加工半径和 GPL 权利确认；输入单个 STEP/STP，显示原始 SHA-256、STEP schema / mm 声明及模型检查数据。
+- 检查调用既有 Replicad/OpenCascade WASM，并基于中心小圆柱探针估计中心当地厚度；无效 B-rep、无实体或中心未命中会阻止登记。这是导入筛查，不是精确厚度场验证或实物适配认证。
+- 写入和 Git 推送采用分离确认；严格 main / 干净工作区 / origin 检查，暂存文件限制为本次预览清单。推送失败时保留本地提交。
+- 现有模板单元 / 浏览器回归改为动态枚举模板，旋转后最低 Z 归一化支持录入的方向角。
+- 未运行 Python 语法 / GUI、WASM CAD、单元、浏览器、构建或独立 native CAD 验证；未验证环境中 Tkinter / Python / Node / Git 的交互运行行为。须在本地先验收维护器，再导入并推送新模板。
+
 ## v0.3.1 — Rollei X-ACT2 第十三模板，2026-09-25
 
 已以代码提交 `7f19cd9` 推送 main，schema 5 不变；本地验证、Linux Checks、Pages 构建部署及公开 HTTPS 十三模板浏览器回归全部成功，详见部署记录。

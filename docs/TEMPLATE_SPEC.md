@@ -1,6 +1,6 @@
 # 模板与参数规范草案
 
-状态：v0.3.1 十三模板已完成本地、Linux CI 与公开 Pages 验证，schemaVersion=5 不变；见 [实施状态](IMPLEMENTATION_STATUS.md) 与 [部署记录](DEPLOYMENT.md)。下文为目标规范。
+状态：本地源码 v0.3.2 新增模板维护器；公开网页仍为已验证版本 v0.3.1，schemaVersion=5 不变。见 [实施状态](IMPLEMENTATION_STATUS.md) 与 [部署记录](DEPLOYMENT.md)。下文为目标规范。
 
 ## 1. 模板来源
 
@@ -65,6 +65,8 @@ JSON 只保存语言无关的可验证数据；schemaVersion 与模板 version �
 v0.2.0 的 relief 字段存储 enabled、shape、width / height / radius / diameter、wall、faceThickness、angle、spacing；shape 为 roundedRectangle / circle，中心固定模板原点。wall 是法向向内厚度，faceThickness 是 Z 厚度，spacing 从原正面到新正面（有符号），定义见 PRD。schema 1 必须先符合完整旧结构（拒绝多余字段），再添加默认关闭 relief 并升级生成器版本；不丢旧孔、补偿、法兰或网格参数。主题 / 语言 / 边线均不进入该结构。
 
 ## 4. 模板贡献验收
+
+本地模板维护器登记单个新模板时，必填稳定 ID、显示名、variant、模板 version、应用版本、X旋转、editableRadius及许可确认；可填 sourceShiftX。先计算原文件 SHA-256、字节数、STEP声明，再用 CAD 内核检查标准化实体、尺寸、主/附属体和中心厚度。注册的用户值与机器测量值分别显示，不把包围盒高度当作当地厚度或把候选半径当认证。写入原文件字节及代码 / 文档 / 版本后显示 diff，明确点击才提交并推送。dirty worktree、重复ID/文件、非 STEP、无效实体或版本不递增均必须阻止写入。推送失败保留现状，便于查看和恢复。
 
 v0.2.1 orientation={frontBack:boolean,upDown:boolean} 是设计级方向，不修改模板身份 / SHA-256。标准化后以主板 Z 范围中点绕 Y 180°翻面，再绕 Z 180°上下翻转；附件高度不影响旋转基准，非对称模板 XY 不自动按包围盒居中。孔位和新特征用最终世界坐标加工。schema 1 按完整无 relief / orientation 的旧结构验证，添加关闭 relief；schema 2 按完整有 relief、无 orientation 的结构验证；二者最终添加 false / false 方向升级为 schema 3。缺字段、多字段、非布尔方向及未知版本拒绝；方向属于几何 revision、撤销与 JSON，坐标轴显示不是几何参数。
 

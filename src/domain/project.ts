@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-export const APP_VERSION = '0.3.1';
+export const APP_VERSION = '0.3.2';
 export const SOURCE_URL = 'https://skgrimes.com/shutters/';
 export const GENERATOR_SOURCE_URL: string = import.meta.env?.VITE_SOURCE_URL || '';
 export const presets = [

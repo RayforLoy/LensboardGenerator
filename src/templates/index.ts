@@ -16,7 +16,7 @@ import rolleiXact2 from '../../steps/Rollei_xact2_lensboard_blank.STEP?url';
 export interface Template {
   id: string; version: string; name: string; variant: 'full' | 'simple';
   url: string; file: string; sha256: string;
-  // Explicit source Y thickness → canonical +Z. Refined by CAD inspection.
+  // Explicit source X-axis orientation; the rotated minimum Z is aligned to the board datum.
   rotationX: number; editableRadius: number; sourceShiftX?: number; sourceMinY?: number;
   sourceType?: 'step' | 'stl';
 }
