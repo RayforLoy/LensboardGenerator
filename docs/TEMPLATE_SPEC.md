@@ -1,6 +1,6 @@
 # 模板与参数规范草案
 
-状态：v0.3.1 十三模板已完成本地自动验证，schemaVersion=5 不变；公开部署状态见 [实施状态](IMPLEMENTATION_STATUS.md)。下文为目标规范。
+状态：v0.3.1 十三模板已完成本地、Linux CI 与公开 Pages 验证，schemaVersion=5 不变；见 [实施状态](IMPLEMENTATION_STATUS.md) 与 [部署记录](DEPLOYMENT.md)。下文为目标规范。
 
 ## 1. 模板来源
 

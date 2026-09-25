@@ -1,5 +1,15 @@
 # 公开部署记录
 
+## v0.3.1 — 2026-09-26
+
+按用户授权将 Rollei X-ACT2 第十三模板、v0.3.0 自定义镜头板与凹凸板叠加功能作为 v0.3.1 推送 main。应用/参数版本为0.3.1/schema5，十三个用户自绘STEP保持原字节；代码提交：[7f19cd9](https://github.com/RayforLoy/LensboardGenerator/commit/7f19cd9658f6adde60e2c3c1acf4ebeb59e015ba)。
+
+- [Pages构建/部署](https://github.com/RayforLoy/LensboardGenerator/actions/runs/36156452537)成功，用时42秒；公开站点实际JS包含0.3.1、`rollei-xact2-blank`与Rollei X-ACT2，非仅根据日志推断部署。
+- 真实公开HTTPS专项Edge/Playwright通过：十三模板逐一完成Worker/WASM建模，Rollei模型就绪，STL ZIP下载、非法JSON保护与390px窄屏检查成功。
+- [Linux Checks](https://github.com/RayforLoy/LensboardGenerator/actions/runs/36156452534)成功，用时14分26秒：30项单元、严格TypeScript/生产构建、120组CAD STEP/STL生成及native OCCT/trimesh独立重读、10项Chromium浏览器检查全部通过。
+- 本地源与dist均为十三STEP且SHA-256集合一致；构建无SLDPRT、STL、SCAD、scadtest或本地测试产物。Rollei仍为experimental，未做实机、漏光、承重或制造认证。
+- 后续只补充本记录的提交使用[skip ci]；已部署网页与对应源码仍指向实际构建的7f19cd9。
+
 ## v0.2.4 — 2026-09-15
 
 按用户授权将已验证倒角及0.2.0–0.2.3本地增量合并提交并推送main；应用/参数版本为0.2.4/schema4，十个自绘STEP原字节保留。代码提交：[f048f7b](https://github.com/RayforLoy/LensboardGenerator/commit/f048f7b612f33af6e65768459007186612f0951c)。未改仓库可见性或创建其他仓库；保留已有Actions Pages、HTTPS和主页配置。

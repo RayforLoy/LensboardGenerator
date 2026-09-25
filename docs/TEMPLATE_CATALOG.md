@@ -1,6 +1,6 @@
 # 初始 STEP 模板目录
 
-登记日期：2026-09-25 · 清单版本：0.4 · 来源：用户自己绘制并提供的 `steps/` 文件。v0.3.1 新增 Rollei X-ACT2，发布状态见实施与部署记录。
+登记日期：2026-09-26 · 清单版本：0.4 · 来源：用户自己绘制并提供的 `steps/` 文件。v0.3.1 新增 Rollei X-ACT2，已完成本地、Linux CI 与公开 Pages 验证，详见实施与部署记录。
 
 用户已确认这些镜头板模板按 [GPL 第 3 版](../LICENSE)（GPL-3.0-only）开源。初始模板使用原始 STEP，不从 scadtest 重新复制 STL。所有原 STEP 保持字节不变；v0.1.0 已进行 WASM CAD 导入和导出后的独立 native OCCT 检查，尚未实物验收，见 [实施状态](IMPLEMENTATION_STATUS.md)。
 

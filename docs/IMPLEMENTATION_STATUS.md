@@ -2,15 +2,15 @@
 
 ## v0.3.1 — Rollei X-ACT2 第十三模板，2026-09-25
 
-本地发布候选已完成自动验证，schema 5 不变；用户已授权验证后提交并推送，远端 Actions / Pages 结果需在推送后记录。
+已以代码提交 `7f19cd9` 推送 main，schema 5 不变；本地验证、Linux Checks、Pages 构建部署及公开 HTTPS 十三模板浏览器回归全部成功，详见部署记录。
 
 - 新增用户自绘 `Rollei_xact2_lensboard_blank.STEP`，登记 ID `rollei-xact2-blank`、显示名 Rollei X-ACT2、GPL-3.0-only、experimental。原字节 SHA-256 为 `28bbc59c8396f4cf42f186eb1b25012a0e1a3abb86aca50db08d39dd6a27ddb9`，AP203 / mm、一个 MANIFOLD_SOLID_BREP。
 - 运行时绕 X +90°并把源最小 Y 对齐 Z=0，无额外 XY 平移；CAD 导入为一个有效实体，标准化包围约 90.8×90.8×7.5 mm，中心当地表面 Z=0 / 2 mm，保守可加工半径 35 mm。默认 #0 通孔及前后 / 上下 / 双翻转均生成有效单体；仍无装机、卡口、漏光或承重认证。
 - 30 项单元测试、严格 TypeScript 与生产构建通过；dist 恰含十三个登记 STEP，源与构建资产 SHA-256 集合一致，不含 SLDPRT、STL、SCAD 或 scadtest。
-- 10 项 Edge / Playwright 全部通过（约1.7分钟），模板选择为十三项并逐一完成真实 Worker / WASM 建模；Rollei、STL ZIP、窄屏、双语、schema迁移、自定义板及既有功能回归通过。
+- 本地10项 Edge / Playwright 全部通过（约1.7分钟），模板选择为十三项并逐一完成真实 Worker / WASM 建模；Rollei、STL ZIP、窄屏、双语、schema迁移、自定义板及既有功能回归通过。公开 HTTPS 另运行十三模板 / Rollei / STL ZIP 专项浏览器回归并通过。
 - 120 组 CAD STEP/STL 生成及 native OCCT/trimesh 独立重读全部通过（v0.3.0 的116组 + Rollei默认孔1组 + 三种非默认方向3组）：有效性、实体数、体积、包围盒、STL闭合/法向/分件、最终坐标偏心孔及左右旋牙型均通过。证据位于忽略的 `tmp/cad-check` 与 `test-results`，可由脚本重建。
 
-尚未完成真实相机装机、遮光、承重、打印试配、标准螺纹公差、Firefox / Safari 及本版本远端 Pages 验证。约847 kB JS / 23 MB WASM及既有 node:module 外置和大包警告仍存在。
+远端 Linux Checks 用时14分26秒，重新执行单元、构建、120组CAD/独立重读及浏览器检查并成功；Pages 构建部署42秒成功。尚未完成真实相机装机、遮光、承重、打印试配、标准螺纹公差及 Firefox / Safari。约847 kB JS / 23 MB WASM及既有 node:module 外置、大包和 GitHub Actions Node 20弃用警告仍存在。
 
 ## v0.3.0 — 自定义镜头板与十二模板，2026-09-19
 

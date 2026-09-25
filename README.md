@@ -2,7 +2,7 @@
 
 大画幅镜头板 / 法兰生成器 · Large-format lensboard & flange generator
 
-实验性 v0.3.1 发布候选已完成本地自动验证，新增第十三个 Rollei X-ACT2 模板，项目 schema 仍为 5。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；本轮验证及公开部署状态见 [更新日志](CHANGELOG.md)、[实施状态](docs/IMPLEMENTATION_STATUS.md) 与 [部署记录](docs/DEPLOYMENT.md)。
+实验性 v0.3.1 已公开部署，新增第十三个 Rollei X-ACT2 模板，项目 schema 仍为 5。纯静态网页，CAD 运算在浏览器 Web Worker 内完成，无需 MakerLab、账户或 Python 后端。支持真实实体 STEP 和二进制 STL；本轮本地、Linux CI 与公开 HTTPS 验证见 [更新日志](CHANGELOG.md)、[实施状态](docs/IMPLEMENTATION_STATUS.md) 与 [部署记录](docs/DEPLOYMENT.md)。
 
 在线使用：[Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/) · [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues)。
 
@@ -62,7 +62,7 @@ python scripts/verify-exports.py
 
 ### GitHub Pages
 
-公开仓库 RayforLoy/LensboardGenerator 使用GitHub Actions静态Pages，仓库主页及HTTPS已配置。main推送自动发布，也可手动运行Deploy GitHub Pages。v0.2.4真实公开HTTPS九项Edge测试通过：十模板、Worker/WASM、倒角与STEP/STL、凸凹/翻转/主题/Report等；[部署记录](docs/DEPLOYMENT.md)。构建使用Pages的base_path。[GitHub官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
+公开仓库 RayforLoy/LensboardGenerator 使用GitHub Actions静态Pages，仓库主页及HTTPS已配置。main推送自动发布，也可手动运行Deploy GitHub Pages。v0.3.1 已在真实公开HTTPS通过十三模板逐一建模、Rollei、Worker/WASM与STL ZIP浏览器回归；完整 Linux Checks 同样成功，见[部署记录](docs/DEPLOYMENT.md)。构建使用Pages的base_path。[GitHub官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
 
 PowerShell 模拟仓库子路径（构建和预览保持同一变量）：
 
@@ -96,6 +96,6 @@ CAD runs locally in a Web Worker with Replicad/OpenCascade WASM. Thirteen user-a
 
 Real solid STEP and checked binary STL download in a ZIP with JSON, GPL text and provenance; built-in-template exports include the original template, while custom boards include a parameter note. Use Node.js 24 / pnpm 11.19.0: `pnpm install --frozen-lockfile`, then `pnpm dev` at http://127.0.0.1:5273/. Run pnpm build, pnpm test, pnpm test:cad and pnpm test:e2e. Browser tests default to installed Edge; TEST_BROWSER and TEST_URL override. requirements-dev.txt contains optional independent verification tools, never a backend.
 
-Live site: [Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/), with [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues), light/dark themes and persisted preferences. GitHub Pages is configured for automatic main-branch and manual Actions deployment. Nine browser scenarios passed against the real v0.2.4 HTTPS site, including ten templates, chamfers and STEP/STL downloads; see the [deployment record](docs/DEPLOYMENT.md). VITE_BASE_PATH supports repository subpaths. Only STEP/STP assets are bundled; scadtest/ and other source CAD formats remain ignored.
+Live site: [Lensboard Studio](https://rayforloy.github.io/LensboardGenerator/), with [Report / Issues](https://github.com/RayforLoy/LensboardGenerator/issues), light/dark themes and persisted preferences. GitHub Pages is configured for automatic main-branch and manual Actions deployment. v0.3.1 passed a real HTTPS browser regression loading all thirteen templates, including Rollei X-ACT2, Worker/WASM and STL ZIP; full Linux Checks also passed. See the [deployment record](docs/DEPLOYMENT.md). VITE_BASE_PATH supports repository subpaths. Only STEP/STP assets are bundled; scadtest/ and other source CAD formats remain ignored.
 
 Read the [implementation status](docs/IMPLEMENTATION_STATUS.md) for evidence and unfinished PRD items. No physical fit, light-tightness, load capacity or standardized thread tolerance class is certified. Original code, initial templates and derivative models use [GPL-3.0-only](LICENSE); third-party terms remain separate.

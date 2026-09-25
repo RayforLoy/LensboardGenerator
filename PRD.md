@@ -1,6 +1,6 @@
 # 大画幅镜头板 / 法兰生成器 · 产品需求文档
 
-版本：1.0 · 日期：2026-09-25 · 状态：v0.3.1 第十三模板增量已完成本地导入、几何、导出与浏览器验证，待提交推送及远端部署验证；schema 5 不变。完整证据见 docs/IMPLEMENTATION_STATUS.md。
+版本：1.0 · 日期：2026-09-26 · 状态：v0.3.1 第十三模板增量已完成本地与 Linux CI、公开 Pages 部署及 HTTPS 浏览器验证；schema 5 不变。完整证据见 docs/IMPLEMENTATION_STATUS.md 与 docs/DEPLOYMENT.md。
 
 ## 1. 产品目标
 
